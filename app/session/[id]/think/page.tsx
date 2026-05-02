@@ -11,7 +11,7 @@ export default async function ThinkPage({ params }: { params: Promise<{ id: stri
 
   const { data: session } = await supabase
     .from('sessions')
-    .select('id, problem')
+    .select('id, problem, mode')
     .eq('id', id)
     .eq('user_id', user.id)
     .single()
@@ -26,7 +26,7 @@ export default async function ThinkPage({ params }: { params: Promise<{ id: stri
 
   const { data: allSessions } = await supabase
     .from('sessions')
-    .select('id, problem, created_at')
+    .select('id, problem, created_at, confidence')
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
@@ -36,6 +36,7 @@ export default async function ThinkPage({ params }: { params: Promise<{ id: stri
       problem={session.problem}
       initialMessages={messages ?? []}
       allSessions={allSessions ?? []}
+      mode={(session.mode ?? 'prep') as 'prep' | 'interview'}
     />
   )
 }

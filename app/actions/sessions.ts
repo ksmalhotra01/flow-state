@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { reconstructProblem } from '@/lib/reconstructProblem'
 
 export type SessionState = { error?: string } | undefined
 
@@ -20,9 +21,11 @@ export async function createSession(
   if (!problem?.trim()) return { error: 'Please paste a problem.' }
   if (!confidence) return { error: 'Please select your confidence level.' }
 
+  const { text: finalProblem } = await reconstructProblem(problem.trim())
+
   const { data, error } = await supabase
     .from('sessions')
-    .insert({ user_id: user.id, problem: problem.trim(), confidence })
+    .insert({ user_id: user.id, problem: finalProblem, confidence })
     .select('id')
     .single()
 
