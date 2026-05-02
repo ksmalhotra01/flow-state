@@ -201,12 +201,14 @@ export default function ThinkingPad({
   initialMessages,
   allSessions,
   mode = 'prep',
+  model = 'claude',
 }: {
   sessionId: string
   problem: string
   initialMessages: Message[]
   allSessions: SessionSummary[]
   mode?: 'prep' | 'interview'
+  model?: string
 }) {
   const [state, serverAction, pending] = useActionState<MessagesState, FormData>(sendMessage, {
     messages: initialMessages,
@@ -314,6 +316,7 @@ export default function ThinkingPad({
     const fd = new FormData()
     fd.set('content', answer)
     fd.set('session_id', sessionId)
+    fd.set('model', model)
     startTransition(() => formAction(fd))
   }
 
@@ -495,6 +498,7 @@ export default function ThinkingPad({
               ) : (
                 <form ref={formRef} action={formAction} className="flex flex-col flex-1 min-h-0">
                   <input type="hidden" name="session_id" value={sessionId} />
+                  <input type="hidden" name="model" value={model} />
                   <div className="relative flex flex-col flex-1 min-h-0">
                     <textarea
                       ref={textareaRef}

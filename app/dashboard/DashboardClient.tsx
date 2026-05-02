@@ -5,6 +5,7 @@ import { useActionState } from 'react'
 import { createSession } from '@/app/actions/sessions'
 import Nav from '@/app/components/Nav'
 import SessionSidebar, { type SessionSummary } from '@/app/components/SessionSidebar'
+import { AI_MODELS, MODEL_LABELS, isComingSoon, type AIModel } from '@/lib/ai/client'
 
 const confidenceLevels = [
   { value: 'low', label: 'Low', description: "I'm not sure where to start" },
@@ -101,6 +102,35 @@ export default function DashboardClient({ sessions }: { sessions: SessionSummary
                         />
                         <span className="text-sm font-semibold text-slate-200">{label}</span>
                         <span className="mt-1 text-xs text-slate-400">{description}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label htmlFor="model" className="text-sm font-medium text-slate-300">
+                    AI model
+                  </label>
+                  <div className="flex gap-2">
+                    {AI_MODELS.map((m: AIModel) => (
+                      <label
+                        key={m}
+                        className={`relative flex cursor-pointer items-center gap-2 rounded-lg border border-slate-700 bg-slate-800 px-3 py-2 text-xs transition-colors has-checked:border-indigo-500 has-checked:bg-indigo-950 ${
+                          isComingSoon(m) ? 'opacity-40 cursor-not-allowed' : 'hover:border-slate-500'
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="model"
+                          value={m}
+                          defaultChecked={m === 'claude'}
+                          disabled={isComingSoon(m)}
+                          className="sr-only"
+                        />
+                        <span className="font-medium text-slate-200">{MODEL_LABELS[m]}</span>
+                        {isComingSoon(m) && (
+                          <span className="text-slate-500">Soon</span>
+                        )}
                       </label>
                     ))}
                   </div>
