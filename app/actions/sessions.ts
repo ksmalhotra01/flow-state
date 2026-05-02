@@ -17,6 +17,7 @@ export async function createSession(
 
   const problem = formData.get('problem') as string
   const confidence = formData.get('confidence') as string
+  const model = (formData.get('model') as string) || 'claude'
 
   if (!problem?.trim()) return { error: 'Please paste a problem.' }
   if (!confidence) return { error: 'Please select your confidence level.' }
@@ -25,7 +26,7 @@ export async function createSession(
 
   const { data, error } = await supabase
     .from('sessions')
-    .insert({ user_id: user.id, problem: finalProblem, confidence })
+    .insert({ user_id: user.id, problem: finalProblem, confidence, model })
     .select('id')
     .single()
 

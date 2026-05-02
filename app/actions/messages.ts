@@ -1,10 +1,10 @@
 'use server'
 
 import { generateText } from 'ai'
-import { anthropic } from '@ai-sdk/anthropic'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { analyzeSession } from '@/lib/analyzeSession'
+import { resolveModel } from '@/lib/ai/client'
 
 export type Message = {
   id: string
@@ -50,7 +50,7 @@ export async function sendMessage(
   // Verify session belongs to this user and get the problem text
   const { data: session } = await supabase
     .from('sessions')
-    .select('id, problem, confidence, mode')
+    .select('id, problem, confidence, mode, model')
     .eq('id', sessionId)
     .eq('user_id', user.id)
     .single()
@@ -73,8 +73,22 @@ export async function sendMessage(
 
   const isInterview = session.mode === 'interview'
 
+  const resolvedModel = resolveModel(session.model ?? 'claude')
+  if (!resolvedModel) {
+    const comingSoonMsg = `${(session.model ?? '').toUpperCase()} support is coming soon. Start a new session and select Claude to continue.`
+    await supabase
+      .from('messages')
+      .insert({ session_id: sessionId, role: 'assistant', content: comingSoonMsg })
+    const { data: updatedMessages } = await supabase
+      .from('messages')
+      .select('id, role, content, created_at')
+      .eq('session_id', sessionId)
+      .order('created_at', { ascending: true })
+    return { messages: updatedMessages ?? [] }
+  }
+
   const { text: aiContent } = await generateText({
-    model: anthropic('claude-opus-4-7'),
+    model: resolvedModel,
     maxOutputTokens: 1024,
     system: isInterview ? `You are a strict technical interviewer running a timed interview.
 
