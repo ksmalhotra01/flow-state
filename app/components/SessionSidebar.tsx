@@ -1,11 +1,13 @@
 'use client'
 
 import Link from 'next/link'
+import { useState, useEffect, useRef } from 'react'
 
 export type SessionSummary = {
   id: string
   problem: string
   created_at: string
+  confidence?: string
 }
 
 type Props = {
@@ -52,8 +54,41 @@ function groupSessions(sessions: SessionSummary[]) {
 }
 
 export default function SessionSidebar({ sessions, currentSessionId, isVisible, onToggle }: Props) {
+  const [width, setWidth] = useState(256)
+  const isResizing = useRef(false)
+  const startX = useRef(0)
+  const startWidth = useRef(256)
+
+  useEffect(() => {
+    function onMouseMove(e: MouseEvent) {
+      if (!isResizing.current) return
+      const delta = e.clientX - startX.current
+      setWidth(Math.max(180, Math.min(480, startWidth.current + delta)))
+    }
+    function onMouseUp() {
+      if (!isResizing.current) return
+      isResizing.current = false
+      document.body.style.userSelect = ''
+      document.body.style.cursor = ''
+    }
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', onMouseUp)
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
+    }
+  }, [])
+
+  function startResize(e: React.MouseEvent) {
+    isResizing.current = true
+    startX.current = e.clientX
+    startWidth.current = width
+    document.body.style.userSelect = 'none'
+    document.body.style.cursor = 'col-resize'
+    e.preventDefault()
+  }
+
   if (!isVisible) {
-    // Collapsed state — show a thin strip with an expand arrow
     return (
       <button
         onClick={onToggle}
@@ -68,8 +103,10 @@ export default function SessionSidebar({ sessions, currentSessionId, isVisible, 
   const groups = groupSessions(sessions)
 
   return (
-    <div className="flex w-64 shrink-0 flex-col border-r border-slate-800 bg-slate-900">
-
+    <div
+      style={{ width }}
+      className="relative flex shrink-0 flex-col border-r border-slate-800 bg-slate-900"
+    >
       {/* Header */}
       <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
         <span className="text-sm font-bold tracking-wide text-slate-100">
@@ -122,9 +159,20 @@ export default function SessionSidebar({ sessions, currentSessionId, isVisible, 
                   }`}>
                     {getProblemTitle(session.problem)}
                   </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    {formatDate(session.created_at)}
-                  </p>
+                  <div className="mt-1 flex items-center gap-1.5">
+                    <span className="text-xs text-slate-500">{formatDate(session.created_at)}</span>
+                    {session.confidence && (
+                      <span className={`rounded px-1.5 py-0.5 text-xs font-bold ${
+                        session.confidence === 'low'
+                          ? 'bg-blue-900/60 text-blue-400'
+                          : session.confidence === 'medium'
+                          ? 'bg-yellow-900/60 text-yellow-400'
+                          : 'bg-green-900/60 text-green-400'
+                      }`}>
+                        {session.confidence === 'low' ? 'L' : session.confidence === 'medium' ? 'M' : 'H'}
+                      </span>
+                    )}
+                  </div>
                 </Link>
               )
             })}
@@ -132,6 +180,11 @@ export default function SessionSidebar({ sessions, currentSessionId, isVisible, 
         ))}
       </div>
 
+      {/* Resize handle */}
+      <div
+        onMouseDown={startResize}
+        className="absolute right-0 top-0 z-10 h-full w-1 cursor-col-resize bg-transparent hover:bg-indigo-500/40 transition-colors"
+      />
     </div>
   )
 }

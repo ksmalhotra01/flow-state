@@ -12,6 +12,12 @@ export default function Nav() {
         >
           New session
         </Link>
+        <Link
+          href="/dashboard/weakness"
+          className="text-sm font-medium text-slate-300 transition-colors hover:text-white"
+        >
+          Weakness
+        </Link>
         <form action={logout}>
           <button
             type="submit"
