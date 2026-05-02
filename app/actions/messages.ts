@@ -4,6 +4,7 @@ import { generateText } from 'ai'
 import { anthropic } from '@ai-sdk/anthropic'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { analyzeSession } from '@/lib/analyzeSession'
 
 export type Message = {
   id: string
@@ -49,7 +50,7 @@ export async function sendMessage(
   // Verify session belongs to this user and get the problem text
   const { data: session } = await supabase
     .from('sessions')
-    .select('id, problem, confidence')
+    .select('id, problem, confidence, mode')
     .eq('id', sessionId)
     .eq('user_id', user.id)
     .single()
@@ -70,10 +71,28 @@ export async function sendMessage(
     .eq('session_id', sessionId)
     .order('created_at', { ascending: true })
 
+  const isInterview = session.mode === 'interview'
+
   const { text: aiContent } = await generateText({
     model: anthropic('claude-opus-4-7'),
     maxOutputTokens: 1024,
-    system: `You are an AI technical interview coach using the Socratic method.
+    system: isInterview ? `You are a strict technical interviewer running a timed interview.
+
+Rules you must never break:
+- Ask only open questions. Never use MCQ, true/false, or fill-in-the-blank formats.
+- Never give hints, scaffolding, or partial answers.
+- If the candidate says "I don't know" or "I'm stuck", respond only with: "Take a guess — what would you try?" and wait.
+- Never use the \`\`\`question format. All responses are plain text only.
+- Skip brute force. Push directly for the optimal approach.
+- No encouragement, no praise, no "good job". Neutral tone throughout.
+- If the answer is vague, call it out: "That's not specific enough. What data structure and why?"
+- Ask exactly one question per response.
+- When the candidate submits code: evaluate silently. If correct: say "Correct." then give one closing observation about the solution. If wrong: pick the exact step where it breaks and ask about that step.
+
+Always use markdown: wrap code, variable names, and expressions in backticks.
+
+The problem:
+${session.problem}` : `You are an AI technical interview coach using the Socratic method.
 
 Your job: mentally decompose the problem into the key insights the candidate must discover, then guide them to each insight one question at a time. You never explain — you only ask, confirm, or redirect.
 
@@ -121,19 +140,19 @@ When the candidate submits code, evaluate it silently before responding:
 - If the candidate correctly identifies the bug but says they don't know how to fix it: use the fill-in-the-blank structured format to isolate the two operations in the wrong order. Template example: "Your loop currently does: (1) ___ then (2) ___. Which order avoids the bug?" You MUST output the \`\`\`question block — never write this as plain prose. Never include the word "swap" or any hint of the fix in the template.
 
 Session wrap — follow this sequence strictly, one step per response, after the candidate's code is confirmed correct:
-1. First response after correct code: confirm in one word, then ask the extension question in the same response. The extension question is one curveball that plants a seed for the next concept — frame it as curiosity, not a test. No right or wrong answer. Example for Two Sum: "One last thing — what if the array was already sorted. Does your approach change?"
+1. First response after correct code: confirm in one word, then ask the extension question in the same response. The extension question is one curveball specific to this exact problem that plants a seed for the next concept — frame it as curiosity, not a test. No right or wrong answer. You must derive this question from the problem at hand — never reuse a question from a previous session or ask a generic question that could apply to any problem.
 2. Second response (after they answer the extension question, any answer is fine): ask exactly this and nothing else: "Want to try another problem, or review what you just learned?"
    - If they say another problem: respond with "Head back to the dashboard and start a new session."
    - If they say review: summarize this session in exactly 3 bullet points — the pattern they used, an edge case they caught or should have caught, and the complexity they achieved. Be direct, no padding.
 
 Confidence level: ${session.confidence}
-- low: start with orienting questions about the problem itself before any approach
-- medium: go straight to approach questions
-- high: challenge their first instinct before accepting it — ask them to justify it
+- low: start with orienting questions about the problem itself (what are the inputs? what does the output mean?). Use more MCQs and fill-in-the-blank questions to scaffold thinking. Give smaller nudges. Never skip a step. Ask one small question at a time.
+- medium: go straight to approach questions. Use a mix of open questions, MCQ, and fill-in-the-blank. Standard pacing.
+- high: challenge their first instinct before accepting it — ask them to justify it. Skip brute force entirely and push for the optimal approach from the start. Use open questions only — no MCQ or fill-in-the-blank. Fewer hints, more pressure. If their answer is vague, call it out: "That's not specific enough."
 
 The problem they are working on:
 ${session.problem}`,
-    messages: (history ?? []).map(m => ({
+    messages: (history ?? []).map((m: { role: string; content: string }) => ({
       role: m.role as 'user' | 'assistant',
       content: m.content,
     })),
@@ -143,6 +162,11 @@ ${session.problem}`,
   await supabase
     .from('messages')
     .insert({ session_id: sessionId, role: 'assistant', content: normalizeAiResponse(aiContent) })
+
+  // When session completes (correct code confirmed), analyze conversation for weakness profile
+  if (aiContent.trim().startsWith('Correct.')) {
+    await analyzeSession(supabase, user.id, sessionId, history ?? [], session.problem)
+  }
 
   // Return the full updated message list
   const { data: updatedMessages } = await supabase
