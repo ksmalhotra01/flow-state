@@ -2,12 +2,32 @@
 
 import Link from 'next/link'
 import { useState, useEffect, useRef } from 'react'
+import { PATTERN_LABELS, type Pattern } from '@/lib/analyzeSession'
+
+const PATTERN_COLORS: Record<string, string> = {
+  arrays:           'bg-blue-900/60 text-blue-300',
+  hashmap:          'bg-green-900/60 text-green-300',
+  two_pointers:     'bg-purple-900/60 text-purple-300',
+  sliding_window:   'bg-cyan-900/60 text-cyan-300',
+  binary_search:    'bg-yellow-900/60 text-yellow-300',
+  stack:            'bg-orange-900/60 text-orange-300',
+  recursion:        'bg-pink-900/60 text-pink-300',
+  trees:            'bg-emerald-900/60 text-emerald-300',
+  graphs:           'bg-teal-900/60 text-teal-300',
+  dp:               'bg-red-900/60 text-red-300',
+  greedy:           'bg-lime-900/60 text-lime-300',
+  sorting:          'bg-amber-900/60 text-amber-300',
+  bit_manipulation: 'bg-violet-900/60 text-violet-300',
+  math:             'bg-sky-900/60 text-sky-300',
+  strings:          'bg-rose-900/60 text-rose-300',
+}
 
 export type SessionSummary = {
   id: string
   problem: string
   created_at: string
   confidence?: string
+  pattern?: string
 }
 
 type Props = {
@@ -161,15 +181,9 @@ export default function SessionSidebar({ sessions, currentSessionId, isVisible, 
                   </p>
                   <div className="mt-1 flex items-center gap-1.5">
                     <span className="text-xs text-slate-500">{formatDate(session.created_at)}</span>
-                    {session.confidence && (
-                      <span className={`rounded px-1.5 py-0.5 text-xs font-bold ${
-                        session.confidence === 'low'
-                          ? 'bg-blue-900/60 text-blue-400'
-                          : session.confidence === 'medium'
-                          ? 'bg-yellow-900/60 text-yellow-400'
-                          : 'bg-green-900/60 text-green-400'
-                      }`}>
-                        {session.confidence === 'low' ? 'L' : session.confidence === 'medium' ? 'M' : 'H'}
+                    {session.pattern && (
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${PATTERN_COLORS[session.pattern] ?? 'bg-slate-800 text-slate-400'}`}>
+                        {PATTERN_LABELS[session.pattern as Pattern] ?? session.pattern}
                       </span>
                     )}
                   </div>

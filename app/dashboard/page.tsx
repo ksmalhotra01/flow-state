@@ -14,5 +14,13 @@ export default async function DashboardPage() {
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
-  return <DashboardClient sessions={sessions ?? []} />
+  const { data: weaknessRows } = await supabase
+    .from('weakness_profile')
+    .select('session_id, pattern')
+    .eq('user_id', user.id)
+
+  const patternBySession = new Map(weaknessRows?.map(r => [r.session_id, r.pattern as string]) ?? [])
+  const sessionsWithPattern = (sessions ?? []).map(s => ({ ...s, pattern: patternBySession.get(s.id) }))
+
+  return <DashboardClient sessions={sessionsWithPattern} />
 }
