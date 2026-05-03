@@ -228,6 +228,7 @@ export default function ThinkingPad({
   const [codeMode, setCodeMode] = useState(false)
   const [inputHeight, setInputHeight] = useState(240)
   const [timeUp, setTimeUp] = useState(false)
+  const [problemExpanded, setProblemExpanded] = useState(false)
   const isInputResizing = useRef(false)
   const startInputY = useRef(0)
   const startInputHeight = useRef(240)
@@ -382,7 +383,15 @@ export default function ThinkingPad({
                 )}
               </div>
               <div className="border-l-2 border-indigo-500 pl-3">
-                <p className="line-clamp-3 font-mono text-sm leading-relaxed text-slate-100">{problem}</p>
+                <p className={`font-mono text-sm leading-relaxed text-slate-100 ${problemExpanded ? 'max-h-48 overflow-y-auto' : 'line-clamp-3'}`}>
+                  {problem}
+                </p>
+                <button
+                  onClick={() => setProblemExpanded(v => !v)}
+                  className="mt-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+                >
+                  {problemExpanded ? 'Show less ↑' : 'Show full problem ↓'}
+                </button>
               </div>
             </div>
           </div>

@@ -14,7 +14,7 @@ export default function Nav() {
         </Link>
         <Link
           href="/dashboard/weakness"
-          className="text-sm font-medium text-slate-300 transition-colors hover:text-white"
+          className="rounded-lg border border-indigo-800 bg-indigo-950/60 px-3 py-1.5 text-sm font-medium text-indigo-300 transition-colors hover:border-indigo-600 hover:text-indigo-200"
         >
           Weakness
         </Link>

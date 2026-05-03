@@ -30,10 +30,10 @@ export default function DashboardClient({ sessions }: { sessions: SessionSummary
         />
 
         <div className="flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-2xl px-4 py-12">
+          <div className="mx-auto max-w-2xl px-4 py-8">
 
             {/* Mode selector — top of page, most prominent element */}
-            <div className="mb-12">
+            <div className="mb-8">
               <p className="mb-4 text-xs font-bold uppercase tracking-widest text-slate-500">
                 Choose a mode
               </p>
@@ -66,12 +66,12 @@ export default function DashboardClient({ sessions }: { sessions: SessionSummary
 
             {/* Prep Mode form */}
             <div id="prep">
-              <div className="mb-8">
+              <div className="mb-5">
                 <h2 className="text-xl font-semibold tracking-tight text-slate-100">Prep Mode</h2>
                 <p className="mt-1 text-slate-400 text-sm">Paste a problem, then walk through your thinking.</p>
               </div>
 
-              <form action={action} className="space-y-8">
+              <form action={action} className="space-y-5">
 
                 <div className="space-y-2">
                   <label htmlFor="problem" className="text-sm font-medium text-slate-300">
@@ -80,7 +80,7 @@ export default function DashboardClient({ sessions }: { sessions: SessionSummary
                   <textarea
                     id="problem"
                     name="problem"
-                    rows={10}
+                    rows={5}
                     placeholder="Paste a problem, or just type a name — 'Two Sum', 'LeetCode 1', 'easy sliding window'…"
                     className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm leading-relaxed text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />

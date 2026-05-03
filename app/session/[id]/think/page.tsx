@@ -30,12 +30,20 @@ export default async function ThinkPage({ params }: { params: Promise<{ id: stri
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
+  const { data: weaknessRows } = await supabase
+    .from('weakness_profile')
+    .select('session_id, pattern')
+    .eq('user_id', user.id)
+
+  const patternBySession = new Map(weaknessRows?.map(r => [r.session_id, r.pattern as string]) ?? [])
+  const allSessionsWithPattern = (allSessions ?? []).map(s => ({ ...s, pattern: patternBySession.get(s.id) }))
+
   return (
     <ThinkingPad
       sessionId={id}
       problem={session.problem}
       initialMessages={messages ?? []}
-      allSessions={allSessions ?? []}
+      allSessions={allSessionsWithPattern}
       mode={(session.mode ?? 'prep') as 'prep' | 'interview'}
       model={session.model ?? 'claude'}
     />

@@ -1,5 +1,6 @@
 'use client'
 
+import { useState, useEffect, useRef } from 'react'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/cjs/styles/prism'
 import type { Message } from '@/app/actions/messages'
@@ -13,7 +14,6 @@ function extractCodeBlocks(messages: Message[]): CodeBlock[] {
   const blocks: CodeBlock[] = []
   for (const msg of messages) {
     if (msg.role !== 'assistant') continue
-    // Strip out ```question blocks first so we don't treat them as code
     const stripped = msg.content.replace(/```question[\s\S]*?```/g, '')
     const regex = /```(\w+)?\n([\s\S]*?)```/g
     let match
@@ -21,7 +21,6 @@ function extractCodeBlocks(messages: Message[]): CodeBlock[] {
       blocks.push({ language: match[1] ?? 'text', code: match[2].trim() })
     }
   }
-  // Most recent first
   return blocks.reverse()
 }
 
@@ -48,6 +47,41 @@ type Props = {
 }
 
 export default function ContextPanel({ messages, isVisible, onToggle }: Props) {
+  const [width, setWidth] = useState(288)
+  const isResizing = useRef(false)
+  const startX = useRef(0)
+  const startWidth = useRef(288)
+
+  useEffect(() => {
+    function onMouseMove(e: MouseEvent) {
+      if (!isResizing.current) return
+      // Panel is on the right — dragging left (smaller clientX) widens it
+      const delta = startX.current - e.clientX
+      setWidth(Math.max(180, Math.min(600, startWidth.current + delta)))
+    }
+    function onMouseUp() {
+      if (!isResizing.current) return
+      isResizing.current = false
+      document.body.style.userSelect = ''
+      document.body.style.cursor = ''
+    }
+    window.addEventListener('mousemove', onMouseMove)
+    window.addEventListener('mouseup', onMouseUp)
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove)
+      window.removeEventListener('mouseup', onMouseUp)
+    }
+  }, [])
+
+  function startResize(e: React.MouseEvent) {
+    isResizing.current = true
+    startX.current = e.clientX
+    startWidth.current = width
+    document.body.style.userSelect = 'none'
+    document.body.style.cursor = 'col-resize'
+    e.preventDefault()
+  }
+
   const codeBlocks = extractCodeBlocks(messages)
   const complexities = extractComplexity(messages)
   const isEmpty = codeBlocks.length === 0 && complexities.length === 0
@@ -65,7 +99,15 @@ export default function ContextPanel({ messages, isVisible, onToggle }: Props) {
   }
 
   return (
-    <div className="flex w-72 shrink-0 flex-col border-l border-slate-800 bg-slate-900">
+    <div
+      style={{ width }}
+      className="relative flex shrink-0 flex-col border-l border-slate-800 bg-slate-900"
+    >
+      {/* Resize handle — left edge */}
+      <div
+        onMouseDown={startResize}
+        className="absolute left-0 top-0 z-10 h-full w-1 cursor-col-resize bg-transparent hover:bg-indigo-500/40 transition-colors"
+      />
 
       <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
         <span className="text-sm font-bold tracking-wide text-slate-100">
