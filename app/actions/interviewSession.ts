@@ -36,7 +36,11 @@ export async function startInterviewSession(
   const difficulty = formData.get('difficulty') as string
   const pattern = formData.get('pattern') as string | null
 
-  if (!difficulty) return { error: 'Please select a difficulty.' }
+  const VALID_DIFFICULTIES = ['easy', 'medium', 'hard']
+  const VALID_PATTERNS = Object.keys(PATTERN_NAMES)
+
+  if (!difficulty || !VALID_DIFFICULTIES.includes(difficulty)) return { error: 'Please select a difficulty.' }
+  if (pattern && pattern !== 'random' && !VALID_PATTERNS.includes(pattern)) return { error: 'Invalid pattern selected.' }
 
   const patternClause = pattern && pattern !== 'random'
     ? `The problem must use the ${PATTERN_NAMES[pattern] ?? pattern} pattern.`

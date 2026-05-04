@@ -99,7 +99,7 @@ Return exactly: {"pattern":"ONE_OF[${PATTERNS.join('|')}]","breakdown_point":"ON
         { user_id: userId, session_id: sessionId, pattern, hint_count: hintCount, breakdown_point: breakdownPoint },
         { onConflict: 'session_id' }
       )
-  } catch {
-    // Silent failure — never break the chat flow
+  } catch (err) {
+    console.error('[analyzeSession] failed for session', sessionId, err)
   }
 }

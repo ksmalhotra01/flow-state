@@ -20,6 +20,7 @@ export async function createSession(
   const model = (formData.get('model') as string) || 'claude'
 
   if (!problem?.trim()) return { error: 'Please paste a problem.' }
+  if (problem.trim().length > 10000) return { error: 'Problem text is too long (max 10,000 characters).' }
   if (!confidence) return { error: 'Please select your confidence level.' }
 
   const { text: finalProblem } = await reconstructProblem(problem.trim())

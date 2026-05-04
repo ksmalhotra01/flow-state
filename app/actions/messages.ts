@@ -46,6 +46,7 @@ export async function sendMessage(
   const content = formData.get('content') as string
 
   if (!content?.trim()) return state
+  if (content.length > 5000) return { messages: state?.messages ?? [], error: 'Message too long (max 5000 characters).' }
 
   // Verify session belongs to this user and get the problem text
   const { data: session } = await supabase
@@ -70,6 +71,10 @@ export async function sendMessage(
     .select('role, content')
     .eq('session_id', sessionId)
     .order('created_at', { ascending: true })
+
+  if ((history ?? []).length >= 200) {
+    return { messages: state?.messages ?? [], error: 'Session limit reached. Start a new session from the dashboard.' }
+  }
 
   const isInterview = session.mode === 'interview'
 
