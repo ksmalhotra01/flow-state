@@ -13,12 +13,12 @@ export async function endSession(sessionId: string, outcome: SessionOutcome): Pr
 
   const { data: session } = await supabase
     .from('sessions')
-    .select('id, problem, mode, user_id')
+    .select('id, problem, mode, user_id, outcome')
     .eq('id', sessionId)
     .eq('user_id', user.id)
     .single()
 
-  if (!session) return
+  if (!session || session.outcome) return
 
   await supabase
     .from('sessions')
