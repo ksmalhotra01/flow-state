@@ -7,6 +7,7 @@ import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/cjs/styles/prism'
 import { sendMessage, type Message, type MessagesState } from '@/app/actions/messages'
+import { endSession } from '@/app/actions/endSession'
 import Nav from '@/app/components/Nav'
 import SessionSidebar, { type SessionSummary } from '@/app/components/SessionSidebar'
 import ContextPanel from '@/app/components/ContextPanel'
@@ -229,6 +230,24 @@ export default function ThinkingPad({
   const [inputHeight, setInputHeight] = useState(240)
   const [timeUp, setTimeUp] = useState(false)
   const [problemExpanded, setProblemExpanded] = useState(false)
+  const [giveUpConfirm, setGiveUpConfirm] = useState(false)
+  const [sessionEnded, setSessionEnded] = useState(false)
+
+  const wasAlreadyAbandoned = mode === 'interview'
+    && initialMessages.length > 0
+    && !initialMessages.some(m => m.content.trim().startsWith('Correct.'))
+  const isAbandoned = wasAlreadyAbandoned || sessionEnded
+
+  async function handleGiveUp() {
+    await endSession(sessionId, 'abandoned')
+    setGiveUpConfirm(false)
+    setSessionEnded(true)
+  }
+
+  async function handleTimeUp() {
+    setTimeUp(true)
+    await endSession(sessionId, 'timed_out')
+  }
   const isInputResizing = useRef(false)
   const startInputY = useRef(0)
   const startInputHeight = useRef(240)
@@ -375,10 +394,38 @@ export default function ThinkingPad({
                     <span className="rounded bg-red-950 px-2 py-0.5 text-xs font-bold uppercase tracking-widest text-red-400">
                       Interview
                     </span>
-                    <InterviewTimer
-                      durationSeconds={1800}
-                      onTimeUp={() => setTimeUp(true)}
-                    />
+                    {initialMessages.length === 0 && !sessionEnded && (
+                      <InterviewTimer
+                        durationSeconds={1800}
+                        onTimeUp={handleTimeUp}
+                      />
+                    )}
+                    {!isAbandoned && optimisticMessages.length > 0 && (
+                      giveUpConfirm ? (
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-slate-400">Abandon this session?</span>
+                          <button
+                            onClick={handleGiveUp}
+                            className="rounded px-2 py-0.5 text-xs font-semibold bg-red-700 text-white hover:bg-red-600 transition-colors"
+                          >
+                            Yes, abandon
+                          </button>
+                          <button
+                            onClick={() => setGiveUpConfirm(false)}
+                            className="rounded px-2 py-0.5 text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => setGiveUpConfirm(true)}
+                          className="rounded-lg bg-red-700 px-3 py-1.5 text-sm font-semibold text-white hover:bg-red-600 transition-colors"
+                        >
+                          I give up
+                        </button>
+                      )
+                    )}
                   </div>
                 )}
               </div>
@@ -459,75 +506,85 @@ export default function ThinkingPad({
 
           {/* Input panel — resizable from the top edge */}
           <div
-            style={{ height: inputHeight }}
+            style={{ height: isAbandoned ? 'auto' : inputHeight }}
             className="shrink-0 flex flex-col bg-slate-950"
           >
 
-            {/* Drag handle — the top border itself is the resize grip */}
-            <div
-              onMouseDown={startInputResize}
-              className="group flex h-3 shrink-0 cursor-row-resize items-center justify-center border-t border-slate-800 hover:border-indigo-500/50 transition-colors"
-            >
-              <div className="h-0.5 w-12 rounded-full bg-slate-700 group-hover:bg-indigo-500/70 transition-colors" />
-            </div>
-
-            {/* Tabs */}
-            <div className="flex shrink-0 border-b border-slate-800">
-              <button
-                onClick={() => setCodeMode(false)}
-                className={`px-5 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px ${
-                  !codeMode
-                    ? 'border-indigo-500 text-white'
-                    : 'border-transparent text-slate-500 hover:text-slate-300'
-                }`}
+            {!isAbandoned && (
+              <div
+                onMouseDown={startInputResize}
+                className="group flex h-3 shrink-0 cursor-row-resize items-center justify-center border-t border-slate-800 hover:border-indigo-500/50 transition-colors"
               >
-                Chat
-              </button>
-              <button
-                onClick={() => setCodeMode(true)}
-                className={`px-5 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px ${
-                  codeMode
-                    ? 'border-indigo-500 text-white'
-                    : 'border-transparent text-slate-500 hover:text-slate-300'
-                }`}
-              >
-                Code
-              </button>
-            </div>
+                <div className="h-0.5 w-12 rounded-full bg-slate-700 group-hover:bg-indigo-500/70 transition-colors" />
+              </div>
+            )}
 
-            {/* Content — flex-col so children can fill the height */}
-            <div className="flex flex-1 flex-col overflow-hidden px-4 py-3 gap-2 min-h-0">
-              {state?.error && (
-                <p className="shrink-0 text-xs text-red-400">{state.error}</p>
-              )}
-              {codeMode ? (
-                <div className="flex-1 min-h-0">
-                  <CodeEditor onSubmit={submitAnswer} disabled={pending} />
+            {isAbandoned ? (
+              <div className="border-t border-slate-800 px-4 py-4 text-center space-y-2">
+                <p className="text-sm text-red-400">This session was abandoned. No further input is allowed.</p>
+                <p className="text-xs text-slate-600">Session ended — start a new session from the dashboard.</p>
+              </div>
+            ) : (
+              <>
+                {/* Tabs */}
+                <div className="flex shrink-0 border-b border-slate-800">
+                  <button
+                    onClick={() => setCodeMode(false)}
+                    className={`px-5 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px ${
+                      !codeMode
+                        ? 'border-indigo-500 text-white'
+                        : 'border-transparent text-slate-500 hover:text-slate-300'
+                    }`}
+                  >
+                    Chat
+                  </button>
+                  <button
+                    onClick={() => setCodeMode(true)}
+                    className={`px-5 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px ${
+                      codeMode
+                        ? 'border-indigo-500 text-white'
+                        : 'border-transparent text-slate-500 hover:text-slate-300'
+                    }`}
+                  >
+                    Code
+                  </button>
                 </div>
-              ) : (
-                <form ref={formRef} action={formAction} className="flex flex-col flex-1 min-h-0">
-                  <input type="hidden" name="session_id" value={sessionId} />
-                  <input type="hidden" name="model" value={model} />
-                  <div className="relative flex flex-col flex-1 min-h-0">
-                    <textarea
-                      ref={textareaRef}
-                      name="content"
-                      placeholder="Explain your thinking… (Enter to send · Shift+Enter for new line)"
-                      disabled={pending}
-                      onKeyDown={handleKeyDown}
-                      className="flex-1 min-h-0 w-full resize-none rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 pr-24 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
-                    />
-                    <button
-                      type="submit"
-                      disabled={pending}
-                      className="absolute bottom-3 right-3 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
-                    >
-                      Send
-                    </button>
-                  </div>
-                </form>
-              )}
-            </div>
+
+                {/* Content — flex-col so children can fill the height */}
+                <div className="flex flex-1 flex-col overflow-hidden px-4 py-3 gap-2 min-h-0">
+                  {state?.error && (
+                    <p className="shrink-0 text-xs text-red-400">{state.error}</p>
+                  )}
+                  {codeMode ? (
+                    <div className="flex-1 min-h-0">
+                      <CodeEditor onSubmit={submitAnswer} disabled={pending} />
+                    </div>
+                  ) : (
+                    <form ref={formRef} action={formAction} className="flex flex-col flex-1 min-h-0">
+                      <input type="hidden" name="session_id" value={sessionId} />
+                      <input type="hidden" name="model" value={model} />
+                      <div className="relative flex flex-col flex-1 min-h-0">
+                        <textarea
+                          ref={textareaRef}
+                          name="content"
+                          placeholder="Explain your thinking… (Enter to send · Shift+Enter for new line)"
+                          disabled={pending}
+                          onKeyDown={handleKeyDown}
+                          className="flex-1 min-h-0 w-full resize-none rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 pr-24 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                        />
+                        <button
+                          type="submit"
+                          disabled={pending}
+                          className="absolute bottom-3 right-3 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+                        >
+                          Send
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </div>
+              </>
+            )}
 
           </div>
 

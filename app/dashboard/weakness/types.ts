@@ -2,6 +2,8 @@ export type PatternStats = {
   pattern: string
   displayName: string
   totalSessions: number
+  completedCount: number
+  abandonedCount: number
   avgHintCount: number
   strengthScore: number
   mostCommonBreakdown: string

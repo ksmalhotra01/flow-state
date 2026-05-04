@@ -85,6 +85,10 @@ export default function WeaknessClient({ stats }: { stats: PatternStats[] }) {
     RECOMMENDATIONS[weakest.mostCommonBreakdown as BreakdownPoint] ??
     RECOMMENDATIONS.optimization
 
+  const abandonedPatterns = stats
+    .filter(p => p.abandonedCount > 0)
+    .sort((a, b) => b.abandonedCount - a.abandonedCount)
+
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 space-y-10">
 
@@ -96,6 +100,33 @@ export default function WeaknessClient({ stats }: { stats: PatternStats[] }) {
           {stats.length} pattern{stats.length !== 1 ? 's' : ''}.
         </p>
       </div>
+
+      {/* Patterns you often abandon */}
+      {abandonedPatterns.length > 0 && (
+        <div className="rounded-2xl border border-red-800/50 bg-red-950/20 p-6">
+          <p className="mb-3 text-xs font-bold uppercase tracking-widest text-red-400">
+            Patterns You Often Abandon
+          </p>
+          <div className="flex flex-wrap gap-3">
+            {abandonedPatterns.map(p => (
+              <div key={p.pattern} className="flex items-center gap-2 rounded-xl border border-red-800/40 bg-slate-900 px-4 py-2.5">
+                <span className="text-sm font-semibold text-slate-200">{p.displayName}</span>
+                <span className="rounded-full bg-red-900/60 px-2 py-0.5 text-xs font-medium text-red-300">
+                  {p.abandonedCount} abandoned
+                </span>
+                {p.abandonedCount > p.completedCount && (
+                  <span className="rounded-full bg-red-700/40 px-2 py-0.5 text-xs font-bold text-red-300">
+                    Priority
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-xs text-slate-500">
+            These patterns need practice before your next interview. Start with easier problems in these areas.
+          </p>
+        </div>
+      )}
 
       {/* Radar + Top 3 side by side */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -146,12 +177,17 @@ export default function WeaknessClient({ stats }: { stats: PatternStats[] }) {
               className="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-3"
             >
               <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-xs font-bold text-slate-600">#{i + 1}</span>
                   <span className="font-semibold text-slate-100">{p.displayName}</span>
                   <span className="rounded bg-slate-800 px-1.5 py-0.5 text-xs font-mono text-indigo-300">
                     avg {p.avgHintCount} hints
                   </span>
+                  {p.abandonedCount > 0 && (
+                    <span className="rounded bg-red-900/50 px-1.5 py-0.5 text-xs font-medium text-red-400">
+                      {p.abandonedCount} abandoned
+                    </span>
+                  )}
                 </div>
                 <TrendBadge trend={p.trend} />
               </div>
@@ -201,6 +237,7 @@ export default function WeaknessClient({ stats }: { stats: PatternStats[] }) {
               <tr className="border-b border-slate-800 text-left text-xs text-slate-500">
                 <th className="px-5 py-2 font-medium">Pattern</th>
                 <th className="px-5 py-2 font-medium">Sessions</th>
+                <th className="px-5 py-2 font-medium">Abandoned</th>
                 <th className="px-5 py-2 font-medium">Avg Hints</th>
                 <th className="px-5 py-2 font-medium">Breaks at</th>
                 <th className="px-5 py-2 font-medium">Trend</th>
@@ -211,6 +248,12 @@ export default function WeaknessClient({ stats }: { stats: PatternStats[] }) {
                 <tr key={p.pattern} className="border-b border-slate-800/50 hover:bg-slate-800/30">
                   <td className="px-5 py-2.5 font-medium text-slate-200">{p.displayName}</td>
                   <td className="px-5 py-2.5 text-slate-400">{p.totalSessions}</td>
+                  <td className="px-5 py-2.5">
+                    {p.abandonedCount > 0
+                      ? <span className="text-red-400 font-medium">{p.abandonedCount}</span>
+                      : <span className="text-slate-600">—</span>
+                    }
+                  </td>
                   <td className="px-5 py-2.5 font-mono text-indigo-300">{p.avgHintCount}</td>
                   <td className="px-5 py-2.5">
                     <BreakdownBadge bp={p.mostCommonBreakdown} />
