@@ -177,8 +177,9 @@ ${session.problem}`,
     .from('messages')
     .insert({ session_id: sessionId, role: 'assistant', content: normalizeAiResponse(aiContent) })
 
-  // When session completes (correct code confirmed), analyze conversation for weakness profile
+  // When session completes (correct code confirmed), analyze and record outcome
   if (aiContent.trim().startsWith('Correct.')) {
+    await supabase.from('sessions').update({ outcome: 'completed' }).eq('id', sessionId)
     await analyzeSession(supabase, user.id, sessionId, history ?? [], session.problem)
   }
 
