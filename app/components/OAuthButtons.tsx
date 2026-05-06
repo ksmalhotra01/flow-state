@@ -3,9 +3,8 @@
 import { createClient } from '@/lib/supabase/client'
 
 export default function OAuthButtons() {
-  const supabase = createClient()
-
   async function signInWith(provider: 'google' | 'github') {
+    const supabase = createClient()
     await supabase.auth.signInWithOAuth({
       provider,
       options: {
