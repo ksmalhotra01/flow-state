@@ -1,11 +1,15 @@
 'use client'
 
 import { useActionState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { login } from '@/app/actions/auth'
+import OAuthButtons from '@/app/components/OAuthButtons'
 
 export default function LoginPage() {
   const [state, action, pending] = useActionState(login, undefined)
+  const searchParams = useSearchParams()
+  const oauthError = searchParams.get('error') === 'auth_failed'
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black">
@@ -44,9 +48,9 @@ export default function LoginPage() {
             />
           </div>
 
-          {state?.error && (
+          {(state?.error || oauthError) && (
             <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950 dark:text-red-400">
-              {state.error}
+              {state?.error ?? 'Sign-in failed. Please try again.'}
             </p>
           )}
 
@@ -58,6 +62,8 @@ export default function LoginPage() {
             {pending ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
+
+        <OAuthButtons />
 
         <p className="text-center text-sm text-zinc-500">
           No account?{' '}
