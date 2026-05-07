@@ -55,6 +55,7 @@ export async function classifyPatternOnly(
   try {
     const { text } = await generateText({
       model: anthropic('claude-haiku-4-5-20251001'),
+      temperature: 0.2,
       maxOutputTokens: 30,
       system: 'Return ONLY valid JSON, no markdown, no explanation.',
       messages: [{
@@ -103,6 +104,7 @@ export async function analyzeSession(
 
     const { text } = await generateText({
       model: anthropic('claude-haiku-4-5-20251001'),
+      temperature: 0.2,
       maxOutputTokens: 80,
       system: 'Return ONLY valid JSON, no markdown, no explanation.',
       messages: [{
