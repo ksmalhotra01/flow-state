@@ -283,16 +283,14 @@ export default function ThinkingPad({
   const startProblemX = useRef(0)
   const startProblemWidth = useRef(320)
 
-  // Both panels persisted in localStorage — toggle without touching the database
-  const [showSidebar, setShowSidebar] = useState(() => {
-    if (typeof window === 'undefined') return true
-    return localStorage.getItem('flowstate-sidebar') !== 'false'
-  })
+  // Both panels persisted in localStorage — start true (matches server), sync after mount
+  const [showSidebar, setShowSidebar] = useState(true)
+  const [showContext, setShowContext] = useState(true)
 
-  const [showContext, setShowContext] = useState(() => {
-    if (typeof window === 'undefined') return true
-    return localStorage.getItem('flowstate-context') !== 'false'
-  })
+  useEffect(() => {
+    setShowSidebar(localStorage.getItem('flowstate-sidebar') !== 'false')
+    setShowContext(localStorage.getItem('flowstate-context') !== 'false')
+  }, [])
 
   function toggleSidebar() {
     const next = !showSidebar

@@ -4,6 +4,7 @@ import { generateText } from 'ai'
 import { anthropic } from '@ai-sdk/anthropic'
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
+import { feedbackLimiter } from '@/lib/ratelimit'
 
 export type Feedback = {
   communication: number
@@ -19,6 +20,9 @@ export async function generateFeedback(sessionId: string): Promise<Feedback | nu
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  const { success } = await feedbackLimiter.limit(user.id)
+  if (!success) return null
 
   const { data: session } = await supabase
     .from('sessions')
