@@ -1,19 +1,18 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import { startInterviewSession } from '@/app/actions/interviewSession'
 import Nav from '@/app/components/Nav'
 
 const DIFFICULTIES = [
-  { value: 'easy', label: 'Easy', description: 'Arrays, basic hash maps, simple loops', color: 'hover:border-green-500 has-checked:border-green-500 has-checked:bg-green-950/30' },
-  { value: 'medium', label: 'Medium', description: 'Sliding window, two pointers, trees', color: 'hover:border-yellow-500 has-checked:border-yellow-500 has-checked:bg-yellow-950/30' },
-  { value: 'hard', label: 'Hard', description: 'DP, graphs, complex optimizations', color: 'hover:border-red-500 has-checked:border-red-500 has-checked:bg-red-950/30' },
+  { value: 'junior', label: 'Junior', description: 'New grad or < 2 years experience', color: 'hover:border-green-500 has-checked:border-green-500 has-checked:bg-green-950/30' },
+  { value: 'mid', label: 'Mid', description: '2–5 years, mid-level roles', color: 'hover:border-yellow-500 has-checked:border-yellow-500 has-checked:bg-yellow-950/30' },
+  { value: 'senior', label: 'Senior', description: '5+ years, staff / FAANG bar', color: 'hover:border-red-500 has-checked:border-red-500 has-checked:bg-red-950/30' },
 ]
 
 const PATTERNS = [
-  { value: 'random', label: 'Random' },
-  { value: 'arrays', label: 'Arrays' },
+  { value: 'prefix_sum', label: 'Prefix Sum' },
   { value: 'hashmap', label: 'Hash Map' },
   { value: 'two_pointers', label: 'Two Pointers' },
   { value: 'sliding_window', label: 'Sliding Window' },
@@ -27,8 +26,35 @@ const PATTERNS = [
   { value: 'strings', label: 'Strings' },
 ]
 
+const MAX_PATTERNS = 3
+
 export default function InterviewSetupClient() {
   const [state, action, pending] = useActionState(startInterviewSession, undefined)
+  const [selected, setSelected] = useState<string[]>([])
+  const [open, setOpen] = useState(false)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+
+  function toggle(value: string) {
+    setSelected(prev =>
+      prev.includes(value)
+        ? prev.filter(v => v !== value)
+        : prev.length < MAX_PATTERNS ? [...prev, value] : prev
+    )
+  }
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const triggerLabel = selected.length === 0
+    ? 'Any pattern'
+    : selected.map(v => PATTERNS.find(p => p.value === v)?.label).join(', ')
 
   return (
     <div className="flex h-screen flex-col bg-slate-950 text-slate-200">
@@ -69,19 +95,67 @@ export default function InterviewSetupClient() {
             </div>
 
             <div className="space-y-2">
-              <label htmlFor="pattern" className="text-sm font-medium text-slate-300">
-                Pattern <span className="text-slate-500">(optional)</span>
-              </label>
-              <select
-                id="pattern"
-                name="pattern"
-                defaultValue="random"
-                className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              >
-                {PATTERNS.map(p => (
-                  <option key={p.value} value={p.value}>{p.label}</option>
+              <p className="text-sm font-medium text-slate-300">
+                Pattern <span className="text-slate-500">(optional, pick up to 3)</span>
+              </p>
+
+              <div ref={dropdownRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setOpen(prev => !prev)}
+                  className="flex w-full items-center justify-between rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm transition-colors hover:border-slate-500"
+                >
+                  <span className={selected.length === 0 ? 'text-slate-500' : 'text-slate-200'}>
+                    {triggerLabel}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    {selected.length > 0 && (
+                      <span className="rounded-full bg-indigo-600 px-2 py-0.5 text-xs font-semibold text-white">
+                        {selected.length}/{MAX_PATTERNS}
+                      </span>
+                    )}
+                    <svg className={`h-4 w-4 text-slate-400 transition-transform ${open ? 'rotate-180' : ''}`} viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                </button>
+
+                {open && (
+                  <div className="absolute z-10 mt-1 w-full rounded-xl border border-slate-700 bg-slate-900 py-1 shadow-xl">
+                    {PATTERNS.map(({ value, label }) => {
+                      const isSelected = selected.includes(value)
+                      const isDisabled = !isSelected && selected.length >= MAX_PATTERNS
+                      return (
+                        <button
+                          key={value}
+                          type="button"
+                          disabled={isDisabled}
+                          onClick={() => toggle(value)}
+                          className={`flex w-full items-center gap-3 px-4 py-2.5 text-sm transition-colors
+                            ${isSelected ? 'text-indigo-300' : isDisabled ? 'cursor-not-allowed text-slate-600' : 'text-slate-300 hover:bg-slate-800'}`}
+                        >
+                          <span className={`flex h-4 w-4 flex-shrink-0 items-center justify-center rounded border ${isSelected ? 'border-indigo-500 bg-indigo-500' : 'border-slate-600'}`}>
+                            {isSelected && (
+                              <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 10 10" fill="none">
+                                <path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
+                            )}
+                          </span>
+                          {label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {selected.map(v => (
+                  <input key={v} type="hidden" name="patterns" value={v} />
                 ))}
-              </select>
+              </div>
+
+              {selected.length === 0 && (
+                <p className="text-xs text-slate-500">Nothing selected — any pattern may appear.</p>
+              )}
             </div>
 
             {state?.error && (
@@ -102,7 +176,7 @@ export default function InterviewSetupClient() {
             <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-2">What to expect</p>
             <ul className="space-y-1 text-xs text-slate-400">
               <li>• 30-minute countdown starts the moment the problem appears</li>
-              <li>• AI acts as a strict interviewer — questions only, no scaffolding</li>
+              <li>• AI acts as a fair interviewer — questions only, no scaffolding</li>
               <li>• If you say "I don't know", it will ask you to guess anyway</li>
               <li>• When time runs out, the session ends automatically</li>
             </ul>

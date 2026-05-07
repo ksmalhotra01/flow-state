@@ -6,8 +6,10 @@ import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { oneDark } from 'react-syntax-highlighter/dist/cjs/styles/prism'
+import Link from 'next/link'
 import { sendMessage, type Message, type MessagesState } from '@/app/actions/messages'
 import { endSession } from '@/app/actions/endSession'
+import { generateFeedback, type Feedback } from '@/app/actions/generateFeedback'
 import Nav from '@/app/components/Nav'
 import SessionSidebar, { type SessionSummary } from '@/app/components/SessionSidebar'
 import ContextPanel from '@/app/components/ContextPanel'
@@ -203,6 +205,7 @@ export default function ThinkingPad({
   allSessions,
   mode = 'prep',
   model = 'claude',
+  outcome = null,
 }: {
   sessionId: string
   problem: string
@@ -210,6 +213,7 @@ export default function ThinkingPad({
   allSessions: SessionSummary[]
   mode?: 'prep' | 'interview'
   model?: string
+  outcome?: string | null
 }) {
   const [state, serverAction, pending] = useActionState<MessagesState, FormData>(sendMessage, {
     messages: initialMessages,
@@ -232,25 +236,38 @@ export default function ThinkingPad({
   const [problemExpanded, setProblemExpanded] = useState(false)
   const [giveUpConfirm, setGiveUpConfirm] = useState(false)
   const [sessionEnded, setSessionEnded] = useState(false)
+  const [feedback, setFeedback] = useState<Feedback | null>(null)
+  const [showFeedback, setShowFeedback] = useState(false)
 
   const wasAlreadyAbandoned = mode === 'interview'
-    && initialMessages.length > 0
-    && !initialMessages.some(m => m.content.trim().startsWith('Correct.'))
+    && outcome === 'abandoned'
   const isAbandoned = wasAlreadyAbandoned || sessionEnded
+  const isSessionOver = isAbandoned || timeUp
 
   async function handleGiveUp() {
     await endSession(sessionId, 'abandoned')
     setGiveUpConfirm(false)
     setSessionEnded(true)
+    if (optimisticMessages.length >= 5) {
+      const fb = await generateFeedback(sessionId)
+      if (fb) { setFeedback(fb); setShowFeedback(true) }
+    }
   }
 
   async function handleTimeUp() {
     setTimeUp(true)
     await endSession(sessionId, 'timed_out')
+    const fb = await generateFeedback(sessionId)
+    if (fb) { setFeedback(fb); setShowFeedback(true) }
   }
   const isInputResizing = useRef(false)
   const startInputY = useRef(0)
   const startInputHeight = useRef(240)
+
+  const [problemPanelWidth, setProblemPanelWidth] = useState(320)
+  const isProblemResizing = useRef(false)
+  const startProblemX = useRef(0)
+  const startProblemWidth = useRef(320)
 
   // Both panels persisted in localStorage — toggle without touching the database
   const [showSidebar, setShowSidebar] = useState(() => {
@@ -279,6 +296,14 @@ export default function ThinkingPad({
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [optimisticMessages])
 
+  useEffect(() => {
+    if (mode !== 'interview' || feedback) return
+    const last = optimisticMessages.findLast(m => m.role === 'assistant')
+    if (last?.content.includes('That wraps up our session.')) {
+      generateFeedback(sessionId).then(fb => { if (fb) { setFeedback(fb); setShowFeedback(true) } })
+    }
+  }, [optimisticMessages])
+
   const prevPendingRef = useRef(false)
   useEffect(() => {
     if (prevPendingRef.current && !pending) {
@@ -289,15 +314,22 @@ export default function ThinkingPad({
 
   useEffect(() => {
     function onMouseMove(e: MouseEvent) {
-      if (!isInputResizing.current) return
-      const delta = startInputY.current - e.clientY
-      setInputHeight(Math.max(120, Math.min(560, startInputHeight.current + delta)))
+      if (isInputResizing.current) {
+        const delta = startInputY.current - e.clientY
+        setInputHeight(Math.max(120, Math.min(560, startInputHeight.current + delta)))
+      }
+      if (isProblemResizing.current) {
+        const delta = startProblemX.current - e.clientX
+        setProblemPanelWidth(Math.max(200, Math.min(600, startProblemWidth.current + delta)))
+      }
     }
     function onMouseUp() {
-      if (!isInputResizing.current) return
-      isInputResizing.current = false
-      document.body.style.userSelect = ''
-      document.body.style.cursor = ''
+      if (isInputResizing.current || isProblemResizing.current) {
+        isInputResizing.current = false
+        isProblemResizing.current = false
+        document.body.style.userSelect = ''
+        document.body.style.cursor = ''
+      }
     }
     window.addEventListener('mousemove', onMouseMove)
     window.addEventListener('mouseup', onMouseUp)
@@ -313,6 +345,15 @@ export default function ThinkingPad({
     startInputHeight.current = inputHeight
     document.body.style.userSelect = 'none'
     document.body.style.cursor = 'row-resize'
+    e.preventDefault()
+  }
+
+  function startProblemResize(e: React.MouseEvent) {
+    isProblemResizing.current = true
+    startProblemX.current = e.clientX
+    startProblemWidth.current = problemPanelWidth
+    document.body.style.userSelect = 'none'
+    document.body.style.cursor = 'col-resize'
     e.preventDefault()
   }
 
@@ -350,19 +391,69 @@ export default function ThinkingPad({
   return (
     <div className="flex h-screen flex-col bg-slate-950 text-slate-200">
 
-      {/* Time-up overlay for interview mode */}
-      {timeUp && (
-        <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-slate-950/95 backdrop-blur">
-          <div className="w-full max-w-md rounded-2xl border border-red-800 bg-slate-900 p-8 text-center">
-            <p className="mb-2 text-4xl font-bold text-red-400">Time&apos;s Up</p>
-            <p className="mb-6 text-slate-400 text-sm">
-              Your 30 minutes are done. Review your conversation below, then head back to the dashboard.
-            </p>
+      {/* Feedback overlay — shown after timer, give-up, or correct solution in interview mode */}
+      {feedback && showFeedback && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 backdrop-blur p-4">
+          <div className="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6 space-y-5">
+            <div className="flex items-center justify-between">
+              <p className="text-lg font-semibold text-slate-100">Interview Scorecard</p>
+              <span className={`rounded-full px-3 py-1 text-xs font-bold ${
+                feedback.verdict === 'Ready' ? 'bg-green-900 text-green-300'
+                : feedback.verdict === 'Getting Close' ? 'bg-yellow-900 text-yellow-300'
+                : 'bg-red-900 text-red-300'
+              }`}>
+                {feedback.verdict}
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              {([
+                { label: 'Communication', value: feedback.communication },
+                { label: 'Problem Solving', value: feedback.problemSolving },
+                { label: 'Code Quality', value: feedback.codeQuality },
+              ] as const).map(({ label, value }) => (
+                <div key={label} className="rounded-xl border border-slate-700 bg-slate-800 p-3 text-center">
+                  <p className="text-2xl font-bold text-slate-100">{value}<span className="text-sm text-slate-500">/5</span></p>
+                  <p className="mt-1 text-xs text-slate-400">{label}</p>
+                </div>
+              ))}
+            </div>
+            {feedback.observations?.length > 0 && (
+              <ul className="space-y-2">
+                {feedback.observations.map((obs, i) => (
+                  <li key={i} className="flex gap-2 text-sm text-slate-300">
+                    <span className="text-slate-500 shrink-0">•</span>
+                    {obs}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {feedback.improvements?.length > 0 && (
+              <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-4 space-y-2">
+                <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Work on before next session</p>
+                <ul className="space-y-2">
+                  {feedback.improvements.map((item, i) => (
+                    <li key={i} className="flex gap-2 text-sm text-slate-300">
+                      <span className="text-indigo-500 shrink-0">→</span>
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {feedback.nextProblem && (
+              <Link
+                href={`/dashboard?problem=${encodeURIComponent(feedback.nextProblem)}`}
+                className="flex items-center justify-between rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm hover:border-indigo-500 hover:bg-indigo-950/30 transition-colors"
+              >
+                <span className="text-slate-400">Try next</span>
+                <span className="font-medium text-slate-200">{feedback.nextProblem} →</span>
+              </Link>
+            )}
             <button
-              onClick={() => setTimeUp(false)}
-              className="rounded-xl bg-slate-700 px-6 py-2.5 text-sm font-semibold text-slate-200 hover:bg-slate-600 transition-colors"
+              onClick={() => setShowFeedback(false)}
+              className="w-full rounded-xl bg-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-slate-600 transition-colors"
             >
-              Review session
+              {timeUp ? 'Review session' : 'Done'}
             </button>
           </div>
         </div>
@@ -373,13 +464,15 @@ export default function ThinkingPad({
       {/* Below the nav: three-column layout that fills the rest of the screen */}
       <div className="flex flex-1 overflow-hidden">
 
-        {/* Left column: session history */}
-        <SessionSidebar
-          sessions={allSessions}
-          currentSessionId={sessionId}
-          isVisible={showSidebar}
-          onToggle={toggleSidebar}
-        />
+        {/* Left column: session history — hidden in interview mode */}
+        {mode !== 'interview' && (
+          <SessionSidebar
+            sessions={allSessions}
+            currentSessionId={sessionId}
+            isVisible={showSidebar}
+            onToggle={toggleSidebar}
+          />
+        )}
 
         {/* Center column: problem + messages + input */}
         <div className="flex flex-1 flex-col overflow-hidden">
@@ -387,59 +480,71 @@ export default function ThinkingPad({
           {/* Problem pinned at top */}
           <div className="shrink-0 border-b border-slate-800 bg-slate-900 py-4">
             <div className="mx-auto max-w-3xl px-4">
-              <div className="mb-2 flex items-center justify-between">
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Problem</p>
-                {mode === 'interview' && (
-                  <div className="flex items-center gap-3">
-                    <span className="rounded bg-red-950 px-2 py-0.5 text-xs font-bold uppercase tracking-widest text-red-400">
-                      Interview
-                    </span>
-                    {initialMessages.length === 0 && !sessionEnded && (
-                      <InterviewTimer
-                        durationSeconds={1800}
-                        onTimeUp={handleTimeUp}
-                      />
-                    )}
-                    {!isAbandoned && optimisticMessages.length > 0 && (
-                      giveUpConfirm ? (
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs text-slate-400">Abandon this session?</span>
-                          <button
-                            onClick={handleGiveUp}
-                            className="rounded px-2 py-0.5 text-xs font-semibold bg-red-700 text-white hover:bg-red-600 transition-colors"
-                          >
-                            Yes, abandon
-                          </button>
-                          <button
-                            onClick={() => setGiveUpConfirm(false)}
-                            className="rounded px-2 py-0.5 text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors"
-                          >
-                            Cancel
-                          </button>
-                        </div>
-                      ) : (
+              {mode === 'interview' ? (
+                <div className="flex items-center gap-3">
+                  <span className="rounded bg-red-950 px-2 py-0.5 text-xs font-bold uppercase tracking-widest text-red-400">
+                    Interview
+                  </span>
+                  {initialMessages.length === 0 && !sessionEnded && (
+                    <InterviewTimer
+                      durationSeconds={1800}
+                      onTimeUp={handleTimeUp}
+                    />
+                  )}
+                  <div className="flex-1" />
+                  {!isAbandoned && optimisticMessages.length > 0 && (
+                    giveUpConfirm ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-400">Abandon this session?</span>
                         <button
-                          onClick={() => setGiveUpConfirm(true)}
-                          className="rounded-lg bg-red-700 px-3 py-1.5 text-sm font-semibold text-white hover:bg-red-600 transition-colors"
+                          onClick={handleGiveUp}
+                          className="rounded px-2 py-0.5 text-xs font-semibold bg-red-700 text-white hover:bg-red-600 transition-colors"
                         >
-                          I give up
+                          Yes, abandon
                         </button>
-                      )
-                    )}
+                        <button
+                          onClick={() => setGiveUpConfirm(false)}
+                          className="rounded px-2 py-0.5 text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setGiveUpConfirm(true)}
+                        className="rounded-lg bg-red-700 px-3 py-1.5 text-sm font-semibold text-white hover:bg-red-600 transition-colors"
+                      >
+                        I give up
+                      </button>
+                    )
+                  )}
+                  {feedback && !showFeedback && (
+                    <button
+                      onClick={() => setShowFeedback(true)}
+                      className="rounded px-2 py-0.5 text-xs font-semibold border border-slate-600 text-slate-300 hover:border-slate-400 hover:text-slate-100 transition-colors"
+                    >
+                      View Scorecard
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <>
+                  <div className="mb-2">
+                    <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Problem</p>
                   </div>
-                )}
-              </div>
-              <div className="border-l-2 border-indigo-500 pl-3">
-                <p className={`font-mono text-sm leading-relaxed text-slate-100 ${problemExpanded ? 'max-h-48 overflow-y-auto' : 'line-clamp-3'}`}>
-                  {problem}
-                </p>
-                <button
-                  onClick={() => setProblemExpanded(v => !v)}
-                  className="mt-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
-                >
-                  {problemExpanded ? 'Show less ↑' : 'Show full problem ↓'}
-                </button>
-              </div>
+                  <div className="border-l-2 border-indigo-500 pl-3">
+                    <p className={`font-mono text-sm leading-relaxed text-slate-100 ${problemExpanded ? 'max-h-48 overflow-y-auto' : 'line-clamp-3'}`}>
+                      {problem}
+                    </p>
+                    <button
+                      onClick={() => setProblemExpanded(v => !v)}
+                      className="mt-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+                    >
+                      {problemExpanded ? 'Show less ↑' : 'Show full problem ↓'}
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -506,11 +611,11 @@ export default function ThinkingPad({
 
           {/* Input panel — resizable from the top edge */}
           <div
-            style={{ height: isAbandoned ? 'auto' : inputHeight }}
+            style={{ height: isSessionOver ? 'auto' : inputHeight }}
             className="shrink-0 flex flex-col bg-slate-950"
           >
 
-            {!isAbandoned && (
+            {!isSessionOver && (
               <div
                 onMouseDown={startInputResize}
                 className="group flex h-3 shrink-0 cursor-row-resize items-center justify-center border-t border-slate-800 hover:border-indigo-500/50 transition-colors"
@@ -519,10 +624,14 @@ export default function ThinkingPad({
               </div>
             )}
 
-            {isAbandoned ? (
+            {isSessionOver ? (
               <div className="border-t border-slate-800 px-4 py-4 text-center space-y-2">
-                <p className="text-sm text-red-400">This session was abandoned. No further input is allowed.</p>
-                <p className="text-xs text-slate-600">Session ended — start a new session from the dashboard.</p>
+                {isAbandoned ? (
+                  <p className="text-sm text-red-400">This session was abandoned. No further input is allowed.</p>
+                ) : (
+                  <p className="text-sm text-yellow-400">This session is complete. Reason: Timed out.</p>
+                )}
+                <p className="text-xs text-slate-600">Start a new session from the dashboard.</p>
               </div>
             ) : (
               <>
@@ -590,12 +699,27 @@ export default function ThinkingPad({
 
         </div>
 
-        {/* Right column: context panel */}
-        <ContextPanel
-          messages={optimisticMessages}
-          isVisible={showContext}
-          onToggle={toggleContext}
-        />
+        {/* Right column: problem panel (interview) or context panel (prep) */}
+        {mode === 'interview' ? (
+          <div style={{ width: problemPanelWidth }} className="relative flex shrink-0 flex-col border-l border-slate-800 bg-slate-900">
+            <div
+              onMouseDown={startProblemResize}
+              className="absolute left-0 top-0 z-10 h-full w-1 cursor-col-resize bg-transparent hover:bg-indigo-500/40 transition-colors"
+            />
+            <div className="border-b border-slate-800 px-4 py-3">
+              <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Problem</span>
+            </div>
+            <div className="flex-1 overflow-y-auto px-4 py-4">
+              <p className="font-mono text-sm leading-relaxed text-slate-200 whitespace-pre-wrap">{problem}</p>
+            </div>
+          </div>
+        ) : (
+          <ContextPanel
+            messages={optimisticMessages}
+            isVisible={showContext}
+            onToggle={toggleContext}
+          />
+        )}
 
       </div>
     </div>

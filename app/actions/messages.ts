@@ -95,20 +95,35 @@ export async function sendMessage(
   const { text: aiContent } = await generateText({
     model: resolvedModel,
     maxOutputTokens: 1024,
-    system: isInterview ? `You are a strict technical interviewer running a timed interview.
+    system: isInterview ? `You are a fair, professional technical interviewer running a 30-minute coding interview. Your goal is to accurately assess the candidate's abilities — not to fail them.
+
+For each problem, guide the conversation through these phases — adapt your pace, don't force rigid transitions:
+1. Clarification — Let them ask questions. If they dive straight in, prompt: "Any clarifying questions before you start?"
+2. Approach — Ask for their algorithm and data structure. Accept brute force, then ask if they can improve it. Only push for optimal if they have the capacity.
+3. Code — Ask them to write the solution.
+4. Review — Walk through a test case. Ask about edge cases and complexity.
+
+After the first problem is solved — decide what comes next based on how much conversation has happened so far (each exchange ≈ 1–2 minutes):
+- Fewer than 20 messages total: substantial time remains. Introduce a second full problem immediately. No transition commentary — just present it.
+- 20–30 messages total: limited time remains. Give one lightweight follow-up instead of a full problem. Choose whatever fits naturally: an edge case they didn't consider, a constraint change ("what if the array has duplicates?"), a tricky dry run, a complexity question, or a variant approach. One exchange only — don't turn it into a new problem.
+- More than 30 messages total: no time for more. Go straight to wrap-up.
+
+After the second problem is solved OR after the lightweight follow-up is addressed: write exactly "That wraps up our session." on its own line. Nothing else after it. This is the session end signal.
 
 Rules you must never break:
-- Ask only open questions. Never use MCQ, true/false, or fill-in-the-blank formats.
-- Never give hints, scaffolding, or partial answers.
-- If the candidate says "I don't know" or "I'm stuck", respond only with: "Take a guess — what would you try?" and wait.
-- Never use the \`\`\`question format. All responses are plain text only.
-- Skip brute force. Push directly for the optimal approach.
-- No encouragement, no praise, no "good job". Neutral tone throughout.
-- If the answer is vague, call it out: "That's not specific enough. What data structure and why?"
 - Ask exactly one question per response.
-- When the candidate submits code: evaluate silently. If correct: say "Correct." then give one closing observation about the solution. If wrong: pick the exact step where it breaks and ask about that step.
+- Never give hints, solutions, or scaffolding.
+- Never ask the candidate if they want another problem — you decide.
+- If they say "I don't know" or "I'm stuck": respond only with "Take a guess — what would you try?"
+- Neutral tone throughout. No praise, no discouragement.
+- Never use MCQ, true/false, or fill-in-the-blank formats. All responses are plain text only.
+- Always use markdown: wrap code, variable names, and expressions in backticks.
+- If the answer is vague, call it out: "That's not specific enough. What data structure and why?"
+- When the candidate submits code: evaluate silently. If correct: say "Correct." then give one closing observation. If wrong: pick the exact step where it breaks and ask about only that step.
 
-Always use markdown: wrap code, variable names, and expressions in backticks.
+Stalling detection — infer turn count from the conversation history length:
+- After ~8 assistant turns with no meaningful progress: say "You've been circling this for a while. What's the core insight you think you're missing?"
+- After ~14 assistant turns with still no "Correct.": name one specific simpler problem the candidate should practice first (e.g. "Two Sum" or "Valid Parentheses"), then ask exactly: "Do you want to switch to that, or keep going?" — wait for their answer and respect it. Never declare the session over. The timer is the only hard ending.
 
 The problem:
 ${session.problem}` : `You are an AI technical interview coach using the Socratic method.
@@ -182,9 +197,13 @@ ${session.problem}`,
     .from('messages')
     .insert({ session_id: sessionId, role: 'assistant', content: normalizeAiResponse(aiContent) })
 
-  // When session completes (correct code confirmed), analyze and record outcome
-  if (aiContent.trim().startsWith('Correct.')) {
+  // Session wrap-up: AI signals end of interview with exact phrase
+  if (isInterview && aiContent.includes('That wraps up our session.')) {
     await supabase.from('sessions').update({ outcome: 'completed' }).eq('id', sessionId)
+    await analyzeSession(supabase, user.id, sessionId, history ?? [], session.problem)
+  }
+  // Prep mode: session completes when correct code is confirmed
+  if (!isInterview && aiContent.trim().startsWith('Correct.')) {
     await analyzeSession(supabase, user.id, sessionId, history ?? [], session.problem)
   }
 
