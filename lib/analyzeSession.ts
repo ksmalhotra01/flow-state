@@ -3,7 +3,7 @@ import { anthropic } from '@ai-sdk/anthropic'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
 export const PATTERNS = [
-  'arrays', 'hashmap', 'two_pointers', 'sliding_window', 'binary_search',
+  'prefix_sum', 'hashmap', 'two_pointers', 'sliding_window', 'binary_search',
   'stack', 'recursion', 'trees', 'graphs', 'dp', 'greedy', 'sorting',
   'bit_manipulation', 'math', 'strings',
 ] as const
@@ -17,7 +17,7 @@ export type Pattern = typeof PATTERNS[number]
 export type BreakdownPoint = typeof BREAKDOWN_POINTS[number]
 
 export const PATTERN_LABELS: Record<Pattern, string> = {
-  arrays: 'Arrays',
+  prefix_sum: 'Prefix Sum',
   hashmap: 'Hash Map',
   two_pointers: 'Two Pointers',
   sliding_window: 'Sliding Window',
@@ -76,7 +76,15 @@ export async function analyzeSession(
       system: 'Return ONLY valid JSON, no markdown, no explanation.',
       messages: [{
         role: 'user',
-        content: `Problem: "${problem.slice(0, 200)}"
+        content: `Identify the PRIMARY algorithmic pattern used to solve this problem.
+
+Pattern disambiguation (commonly confused):
+- prefix_sum: uses a running cumulative sum to answer queries about subarrays or ranges. "Sum of elements to the left/right" is prefix_sum, NOT two_pointers.
+- two_pointers: requires two pointers moving through a sequence simultaneously. Single traversal is NOT two_pointers.
+- hashmap: primary insight is O(1) lookup via a hash map or hash set.
+- sliding_window: a window with two boundaries that expands and contracts.
+
+Problem: "${problem.slice(0, 200)}"
 
 Conversation:
 ${conversationText}
@@ -89,7 +97,7 @@ Return exactly: {"pattern":"ONE_OF[${PATTERNS.join('|')}]","breakdown_point":"ON
     const result = JSON.parse(clean) as { pattern: string; breakdown_point: string }
 
     const pattern: Pattern = (PATTERNS as readonly string[]).includes(result.pattern)
-      ? result.pattern as Pattern : 'arrays'
+      ? result.pattern as Pattern : 'two_pointers'
     const breakdownPoint: BreakdownPoint = (BREAKDOWN_POINTS as readonly string[]).includes(result.breakdown_point)
       ? result.breakdown_point as BreakdownPoint : 'optimization'
 
