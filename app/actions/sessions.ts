@@ -1,8 +1,10 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { after } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { reconstructProblem } from '@/lib/reconstructProblem'
+import { classifyPatternOnly } from '@/lib/analyzeSession'
 
 export type SessionState = { error?: string } | undefined
 
@@ -32,6 +34,9 @@ export async function createSession(
     .single()
 
   if (error) return { error: 'Something went wrong. Please try again.' }
+
+  // Classify pattern in the background — fires after the redirect, user feels no delay
+  after(() => classifyPatternOnly(supabase, user.id, data.id, finalProblem))
 
   redirect(`/session/${data.id}/think`)
 }

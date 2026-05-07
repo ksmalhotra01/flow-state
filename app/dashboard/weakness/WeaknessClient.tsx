@@ -174,7 +174,7 @@ export default function WeaknessClient({ stats }: { stats: PatternStats[] }) {
           {top3.map((p, i) => (
             <div
               key={p.pattern}
-              className="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-3"
+              className="rounded-xl border border-slate-800 bg-slate-900 p-4 space-y-3 transition-all duration-200 hover:border-indigo-800 hover:bg-slate-900/80"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex items-center gap-2 flex-wrap">
@@ -269,7 +269,8 @@ export default function WeaknessClient({ stats }: { stats: PatternStats[] }) {
       )}
 
       {/* Recommendation */}
-      <div className="rounded-2xl border border-indigo-800 bg-indigo-950/40 p-6">
+      <div className="relative rounded-2xl border border-indigo-800/60 bg-indigo-950/30 p-6 overflow-hidden">
+        <div className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-indigo-600/10 blur-2xl" />
         <p className="mb-1 text-xs font-bold uppercase tracking-widest text-indigo-400">
           Recommended Focus
         </p>

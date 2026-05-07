@@ -9,66 +9,92 @@ export default function SignupPage() {
   const [state, action, pending] = useActionState(signup, undefined)
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black">
-      <div className="w-full max-w-sm space-y-6 rounded-xl border border-zinc-200 bg-white p-8 dark:border-zinc-800 dark:bg-zinc-900">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Create your account</h1>
-          <p className="mt-1 text-sm text-zinc-500">Start preparing smarter with FlowState.</p>
+    <div className="relative flex min-h-screen items-center justify-center bg-slate-950 overflow-hidden">
+
+      {/* Background glow */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute left-1/2 top-1/3 h-150 w-150 -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-600/8 blur-3xl" />
+      </div>
+
+      <div className="relative w-full max-w-sm px-4">
+
+        {/* Brand */}
+        <div className="mb-8 text-center">
+          <div className="mb-3 inline-flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
+              <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M17.25 6.75L22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3l-4.5 16.5" />
+              </svg>
+            </div>
+            <span className="text-xl font-bold tracking-tight text-white">FlowState</span>
+          </div>
+          <p className="text-sm text-slate-500">AI-powered coding interview prep</p>
         </div>
 
-        <form action={action} className="space-y-4">
-          <div className="space-y-1">
-            <label htmlFor="email" className="text-sm font-medium">
-              Email
-            </label>
-            <input
-              id="email"
-              name="email"
-              type="email"
-              required
-              autoComplete="email"
-              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:focus:ring-zinc-100"
-            />
+        {/* Card */}
+        <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-8 shadow-2xl backdrop-blur">
+          <div className="mb-6">
+            <h1 className="text-lg font-semibold text-slate-100">Create your account</h1>
+            <p className="mt-1 text-sm text-slate-500">Start preparing smarter, starting today.</p>
           </div>
 
-          <div className="space-y-1">
-            <label htmlFor="password" className="text-sm font-medium">
-              Password
-            </label>
-            <input
-              id="password"
-              name="password"
-              type="password"
-              required
-              autoComplete="new-password"
-              minLength={6}
-              className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-zinc-900 dark:border-zinc-700 dark:bg-zinc-800 dark:focus:ring-zinc-100"
-            />
-          </div>
+          <form action={action} className="space-y-4">
+            <div className="space-y-1.5">
+              <label htmlFor="email" className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+                Email
+              </label>
+              <input
+                id="email"
+                name="email"
+                type="email"
+                required
+                autoComplete="email"
+                placeholder="you@example.com"
+                className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-slate-100 placeholder-slate-600 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              />
+            </div>
 
-          {state?.error && (
-            <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950 dark:text-red-400">
-              {state.error}
-            </p>
-          )}
+            <div className="space-y-1.5">
+              <label htmlFor="password" className="text-xs font-semibold uppercase tracking-widest text-slate-500">
+                Password
+              </label>
+              <input
+                id="password"
+                name="password"
+                type="password"
+                required
+                autoComplete="new-password"
+                minLength={6}
+                placeholder="••••••••"
+                className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-sm text-slate-100 placeholder-slate-600 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              />
+            </div>
 
-          <button
-            type="submit"
-            disabled={pending}
-            className="w-full rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-          >
-            {pending ? 'Creating account…' : 'Create account'}
-          </button>
-        </form>
+            {state?.error && (
+              <p className="rounded-xl border border-red-800/50 bg-red-950/50 px-4 py-2.5 text-sm text-red-400">
+                {state.error}
+              </p>
+            )}
 
-        <OAuthButtons />
+            <button
+              type="submit"
+              disabled={pending}
+              className="w-full rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 disabled:opacity-50"
+            >
+              {pending ? 'Creating account…' : 'Create account →'}
+            </button>
+          </form>
 
-        <p className="text-center text-sm text-zinc-500">
-          Already have an account?{' '}
-          <Link href="/login" className="font-medium text-zinc-900 underline dark:text-zinc-100">
-            Sign in
-          </Link>
-        </p>
+          <OAuthButtons />
+
+          <p className="mt-6 text-center text-sm text-slate-500">
+            Already have an account?{' '}
+            <Link href="/login" className="font-semibold text-indigo-400 transition-colors hover:text-indigo-300">
+              Sign in
+            </Link>
+          </p>
+        </div>
+
       </div>
     </div>
   )
