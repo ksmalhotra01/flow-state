@@ -4,6 +4,7 @@ import { generateText } from 'ai'
 import { anthropic } from '@ai-sdk/anthropic'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { interviewLimiter } from '@/lib/ratelimit'
 
 export type InterviewSessionState = { error?: string } | undefined
 
@@ -32,6 +33,9 @@ export async function startInterviewSession(
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/login')
+
+  const { success } = await interviewLimiter.limit(user.id)
+  if (!success) return { error: 'Too many sessions. Please wait before starting another interview.' }
 
   const difficulty = formData.get('difficulty') as string
   const patterns = formData.getAll('patterns') as string[]

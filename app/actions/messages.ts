@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { analyzeSession } from '@/lib/analyzeSession'
 import { resolveModel } from '@/lib/ai/client'
+import { messageLimiter } from '@/lib/ratelimit'
 
 export type Message = {
   id: string
@@ -41,6 +42,9 @@ export async function sendMessage(
   const { data: { user } } = await supabase.auth.getUser()
 
   if (!user) redirect('/login')
+
+  const { success } = await messageLimiter.limit(user.id)
+  if (!success) return { messages: state?.messages ?? [], error: 'Too many messages. Please wait a moment before sending.' }
 
   const sessionId = formData.get('session_id') as string
   const content = formData.get('content') as string
@@ -122,9 +126,9 @@ Rules you must never break:
 - If the answer is vague, call it out: "That's not specific enough. What data structure and why?"
 - When the candidate submits code: evaluate silently. If correct: say "Correct." then give one closing observation. If wrong: pick the exact step where it breaks and ask about only that step.
 
-Stalling detection — infer turn count from the conversation history length:
-- After ~8 assistant turns with no meaningful progress: say "You've been circling this for a while. What's the core insight you think you're missing?"
-- After ~14 assistant turns with still no "Correct.": name one specific simpler problem the candidate should practice first (e.g. "Two Sum" or "Valid Parentheses"), then ask exactly: "Do you want to switch to that, or keep going?" — wait for their answer and respect it. Never declare the session over. The timer is the only hard ending.
+Stalling detection — count the number of messages where role === "assistant" in the conversation history you have been given:
+- If there are 5 or more assistant messages and no meaningful progress toward a solution: say exactly "You've been circling this for a while. What's the core insight you think you're missing?" — then immediately change your approach: pick a concrete example from the problem, walk through it step by step, and ask about one specific value (e.g. "In [1,7,3,6,5,6], what is the sum of elements to the left of index 3?"). Do NOT rephrase the same question you just asked.
+- If there are 10 or more assistant messages and still no "Correct.": name one specific simpler problem the candidate should practice first (e.g. "Two Sum" or "Valid Parentheses"), then ask exactly: "Do you want to switch to that, or keep going?" — wait for their answer and respect it. Never declare the session over. The timer is the only hard ending.
 
 The problem:
 ${session.problem}` : `You are an AI technical interview coach using the Socratic method.
