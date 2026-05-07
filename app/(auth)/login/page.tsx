@@ -1,8 +1,21 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useActionState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { login } from '@/app/actions/auth'
+import OAuthButtons from '@/app/components/OAuthButtons'
+
+function OAuthErrorBanner() {
+  const searchParams = useSearchParams()
+  if (searchParams.get('error') !== 'auth_failed') return null
+  return (
+    <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-950 dark:text-red-400">
+      Sign-in failed. Please try again.
+    </p>
+  )
+}
 
 export default function LoginPage() {
   const [state, action, pending] = useActionState(login, undefined)
@@ -14,6 +27,10 @@ export default function LoginPage() {
           <h1 className="text-2xl font-semibold tracking-tight">Sign in to FlowState</h1>
           <p className="mt-1 text-sm text-zinc-500">Enter your email and password below.</p>
         </div>
+
+        <Suspense fallback={null}>
+          <OAuthErrorBanner />
+        </Suspense>
 
         <form action={action} className="space-y-4">
           <div className="space-y-1">
@@ -58,6 +75,8 @@ export default function LoginPage() {
             {pending ? 'Signing in…' : 'Sign in'}
           </button>
         </form>
+
+        <OAuthButtons />
 
         <p className="text-center text-sm text-zinc-500">
           No account?{' '}

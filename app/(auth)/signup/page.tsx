@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import Link from 'next/link'
 import { signup } from '@/app/actions/auth'
+import OAuthButtons from '@/app/components/OAuthButtons'
 
 export default function SignupPage() {
   const [state, action, pending] = useActionState(signup, undefined)
@@ -59,6 +60,8 @@ export default function SignupPage() {
             {pending ? 'Creating account…' : 'Create account'}
           </button>
         </form>
+
+        <OAuthButtons />
 
         <p className="text-center text-sm text-zinc-500">
           Already have an account?{' '}
