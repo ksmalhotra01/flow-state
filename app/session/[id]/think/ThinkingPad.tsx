@@ -1,6 +1,7 @@
 'use client'
 
 import { useActionState, useOptimistic, useEffect, useRef, startTransition, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import dynamic from 'next/dynamic'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -238,27 +239,40 @@ export default function ThinkingPad({
   const [sessionEnded, setSessionEnded] = useState(false)
   const [feedback, setFeedback] = useState<Feedback | null>(null)
   const [showFeedback, setShowFeedback] = useState(false)
+  // Snapshot message count when session ends so in-flight AI responses don't appear after give-up
+  const [messageCountAtEnd, setMessageCountAtEnd] = useState<number | null>(null)
 
-  const wasAlreadyAbandoned = mode === 'interview'
-    && outcome === 'abandoned'
+  const wasAlreadyAbandoned = mode === 'interview' && outcome === 'abandoned'
   const isAbandoned = wasAlreadyAbandoned || sessionEnded
   const isSessionOver = isAbandoned || timeUp
 
   async function handleGiveUp() {
-    await endSession(sessionId, 'abandoned')
     setGiveUpConfirm(false)
     setSessionEnded(true)
+    setMessageCountAtEnd(optimisticMessages.length)
     if (optimisticMessages.length >= 5) {
-      const fb = await generateFeedback(sessionId)
-      if (fb) { setFeedback(fb); setShowFeedback(true) }
+      setShowFeedback(true)
+      const [, fb] = await Promise.all([
+        endSession(sessionId, 'abandoned'),
+        generateFeedback(sessionId),
+      ])
+      if (fb) setFeedback(fb)
+      else setShowFeedback(false)
+    } else {
+      await endSession(sessionId, 'abandoned')
     }
   }
 
   async function handleTimeUp() {
     setTimeUp(true)
-    await endSession(sessionId, 'timed_out')
-    const fb = await generateFeedback(sessionId)
-    if (fb) { setFeedback(fb); setShowFeedback(true) }
+    setMessageCountAtEnd(optimisticMessages.length)
+    setShowFeedback(true)
+    const [, fb] = await Promise.all([
+      endSession(sessionId, 'timed_out'),
+      generateFeedback(sessionId),
+    ])
+    if (fb) setFeedback(fb)
+    else setShowFeedback(false)
   }
   const isInputResizing = useRef(false)
   const startInputY = useRef(0)
@@ -291,6 +305,10 @@ export default function ThinkingPad({
     setShowContext(next)
     localStorage.setItem('flowstate-context', String(next))
   }
+
+  const visibleMessages = messageCountAtEnd !== null
+    ? optimisticMessages.slice(0, messageCountAtEnd)
+    : optimisticMessages
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -391,75 +409,102 @@ export default function ThinkingPad({
   return (
     <div className="flex h-screen flex-col bg-slate-950 text-slate-200">
 
-      {/* Feedback overlay — shown after timer, give-up, or correct solution in interview mode */}
-      {feedback && showFeedback && (
+      {/* Feedback overlay — shown after timer or give-up; shows skeleton while AI generates */}
+      {showFeedback && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 backdrop-blur p-4">
           <div className="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6 space-y-5">
-            <div className="flex items-center justify-between">
-              <p className="text-lg font-semibold text-slate-100">Interview Scorecard</p>
-              <span className={`rounded-full px-3 py-1 text-xs font-bold ${
-                feedback.verdict === 'Ready' ? 'bg-green-900 text-green-300'
-                : feedback.verdict === 'Getting Close' ? 'bg-yellow-900 text-yellow-300'
-                : 'bg-red-900 text-red-300'
-              }`}>
-                {feedback.verdict}
-              </span>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              {([
-                { label: 'Communication', value: feedback.communication },
-                { label: 'Problem Solving', value: feedback.problemSolving },
-                { label: 'Code Quality', value: feedback.codeQuality },
-              ] as const).map(({ label, value }) => (
-                <div key={label} className="rounded-xl border border-slate-700 bg-slate-800 p-3 text-center">
-                  <p className="text-2xl font-bold text-slate-100">{value}<span className="text-sm text-slate-500">/5</span></p>
-                  <p className="mt-1 text-xs text-slate-400">{label}</p>
+            {feedback ? (
+              <>
+                <div className="flex items-center justify-between">
+                  <p className="text-lg font-semibold text-slate-100">Interview Scorecard</p>
+                  <span className={`rounded-full px-3 py-1 text-xs font-bold ${
+                    feedback.verdict === 'Ready' ? 'bg-green-900 text-green-300'
+                    : feedback.verdict === 'Getting Close' ? 'bg-yellow-900 text-yellow-300'
+                    : 'bg-red-900 text-red-300'
+                  }`}>
+                    {feedback.verdict}
+                  </span>
                 </div>
-              ))}
-            </div>
-            {feedback.observations?.length > 0 && (
-              <ul className="space-y-2">
-                {feedback.observations.map((obs, i) => (
-                  <li key={i} className="flex gap-2 text-sm text-slate-300">
-                    <span className="text-slate-500 shrink-0">•</span>
-                    {obs}
-                  </li>
-                ))}
-              </ul>
-            )}
-            {feedback.improvements?.length > 0 && (
-              <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-4 space-y-2">
-                <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Work on before next session</p>
-                <ul className="space-y-2">
-                  {feedback.improvements.map((item, i) => (
-                    <li key={i} className="flex gap-2 text-sm text-slate-300">
-                      <span className="text-indigo-500 shrink-0">→</span>
-                      {item}
-                    </li>
+                <div className="grid grid-cols-3 gap-3">
+                  {([
+                    { label: 'Communication', value: feedback.communication },
+                    { label: 'Problem Solving', value: feedback.problemSolving },
+                    { label: 'Code Quality', value: feedback.codeQuality },
+                  ] as const).map(({ label, value }) => (
+                    <div key={label} className="rounded-xl border border-slate-700 bg-slate-800 p-3 text-center">
+                      <p className="text-2xl font-bold text-slate-100">{value}<span className="text-sm text-slate-500">/5</span></p>
+                      <p className="mt-1 text-xs text-slate-400">{label}</p>
+                    </div>
                   ))}
-                </ul>
+                </div>
+                {feedback.observations?.length > 0 && (
+                  <ul className="space-y-2">
+                    {feedback.observations.map((obs, i) => (
+                      <li key={i} className="flex gap-2 text-sm text-slate-300">
+                        <span className="text-slate-500 shrink-0">•</span>
+                        {obs}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {feedback.improvements?.length > 0 && (
+                  <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-4 space-y-2">
+                    <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Work on before next session</p>
+                    <ul className="space-y-2">
+                      {feedback.improvements.map((item, i) => (
+                        <li key={i} className="flex gap-2 text-sm text-slate-300">
+                          <span className="text-indigo-500 shrink-0">→</span>
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {feedback.nextProblem && (
+                  <Link
+                    href={`/dashboard?problem=${encodeURIComponent(feedback.nextProblem)}`}
+                    className="flex items-center justify-between rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm hover:border-indigo-500 hover:bg-indigo-950/30 transition-colors"
+                  >
+                    <span className="text-slate-400">Try next</span>
+                    <span className="font-medium text-slate-200">{feedback.nextProblem} →</span>
+                  </Link>
+                )}
+                <button
+                  onClick={() => setShowFeedback(false)}
+                  className="w-full rounded-xl bg-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-slate-600 transition-colors"
+                >
+                  {timeUp ? 'Review session' : 'Done'}
+                </button>
+              </>
+            ) : (
+              <div className="animate-pulse space-y-5">
+                <div className="flex items-center justify-between">
+                  <div className="h-6 w-40 rounded bg-slate-800" />
+                  <div className="h-6 w-24 rounded-full bg-slate-800" />
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="h-20 rounded-xl bg-slate-800" />
+                  ))}
+                </div>
+                <div className="space-y-2">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="h-4 rounded bg-slate-800" style={{ width: `${75 + i * 8}%` }} />
+                  ))}
+                </div>
+                <div className="rounded-xl bg-slate-800/60 p-4 space-y-2">
+                  {[...Array(2)].map((_, i) => (
+                    <div key={i} className="h-4 rounded bg-slate-800" style={{ width: `${80 + i * 10}%` }} />
+                  ))}
+                </div>
+                <p className="text-center text-sm text-slate-500">Analysing your session…</p>
               </div>
             )}
-            {feedback.nextProblem && (
-              <Link
-                href={`/dashboard?problem=${encodeURIComponent(feedback.nextProblem)}`}
-                className="flex items-center justify-between rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm hover:border-indigo-500 hover:bg-indigo-950/30 transition-colors"
-              >
-                <span className="text-slate-400">Try next</span>
-                <span className="font-medium text-slate-200">{feedback.nextProblem} →</span>
-              </Link>
-            )}
-            <button
-              onClick={() => setShowFeedback(false)}
-              className="w-full rounded-xl bg-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-slate-600 transition-colors"
-            >
-              {timeUp ? 'Review session' : 'Done'}
-            </button>
           </div>
         </div>
       )}
 
-      <Nav />
+      <Nav locked={mode === 'interview' && !isSessionOver} />
 
       {/* Below the nav: three-column layout that fills the rest of the screen */}
       <div className="flex flex-1 overflow-hidden">
@@ -552,47 +597,52 @@ export default function ThinkingPad({
           <div className="flex-1 overflow-y-auto py-8">
             <div className="mx-auto max-w-3xl space-y-4 px-4">
 
-              {optimisticMessages.length === 0 && (
+              {visibleMessages.length === 0 && (
                 <p className="mt-16 text-center text-sm text-slate-500">
                   Explain your initial approach to the problem.
                 </p>
               )}
 
-              {optimisticMessages.map((message) => {
-                const question = message.role === 'assistant' ? parseQuestion(message.content) : null
+              <AnimatePresence initial={false}>
+                {visibleMessages.map((message) => {
+                  const question = message.role === 'assistant' ? parseQuestion(message.content) : null
 
-                return (
-                  <div
-                    key={message.id}
-                    className={`rounded-xl border p-5 text-sm ${
-                      message.role === 'assistant'
-                        ? 'border-slate-700 bg-slate-900 text-slate-200'
-                        : 'border-indigo-800 bg-slate-800 text-white'
-                    }`}
-                  >
-                    <p className={`mb-3 text-xs font-semibold uppercase tracking-widest ${
-                      message.role === 'assistant' ? 'text-indigo-300' : 'text-slate-400'
-                    }`}>
-                      {message.role === 'assistant' ? 'Interviewer' : 'You'}
-                    </p>
-                    {message.role === 'assistant' ? (
-                      question && mode !== 'interview' ? (
-                        <InteractiveQuestion
-                          question={question}
-                          onSubmit={submitAnswer}
-                          disabled={pending}
-                        />
+                  return (
+                    <motion.div
+                      key={message.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2, ease: 'easeOut' }}
+                      className={`rounded-xl border p-5 text-sm ${
+                        message.role === 'assistant'
+                          ? 'border-slate-700 bg-slate-900 text-slate-200'
+                          : 'border-indigo-800 bg-slate-800 text-white'
+                      }`}
+                    >
+                      <p className={`mb-3 text-xs font-semibold uppercase tracking-widest ${
+                        message.role === 'assistant' ? 'text-indigo-300' : 'text-slate-400'
+                      }`}>
+                        {message.role === 'assistant' ? 'Interviewer' : 'You'}
+                      </p>
+                      {message.role === 'assistant' ? (
+                        question && mode !== 'interview' ? (
+                          <InteractiveQuestion
+                            question={question}
+                            onSubmit={submitAnswer}
+                            disabled={pending}
+                          />
+                        ) : (
+                          <MessageContent content={message.content.replace(/```question[\s\S]*?```/g, '')} />
+                        )
                       ) : (
-                        <MessageContent content={message.content.replace(/```question[\s\S]*?```/g, '')} />
-                      )
-                    ) : (
-                      <MessageContent content={message.content} />
-                    )}
-                  </div>
-                )
-              })}
+                        <MessageContent content={message.content} />
+                      )}
+                    </motion.div>
+                  )
+                })}
+              </AnimatePresence>
 
-              {pending && (
+              {pending && !isSessionOver && (
                 <div className="rounded-xl border border-slate-800 bg-slate-900 p-5">
                   <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-indigo-400">
                     Interviewer

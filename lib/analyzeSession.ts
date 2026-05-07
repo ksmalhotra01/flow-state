@@ -43,6 +43,44 @@ export const BREAKDOWN_LABELS: Record<BreakdownPoint, string> = {
   coding: 'Coding',
 }
 
+// Called at session creation — classifies the pattern from problem text only,
+// writes a placeholder record so the sidebar badge appears immediately.
+// The full analyzeSession will overwrite this with real hint counts later.
+export async function classifyPatternOnly(
+  supabase: SupabaseClient,
+  userId: string,
+  sessionId: string,
+  problem: string
+): Promise<void> {
+  try {
+    const { text } = await generateText({
+      model: anthropic('claude-haiku-4-5-20251001'),
+      maxOutputTokens: 30,
+      system: 'Return ONLY valid JSON, no markdown, no explanation.',
+      messages: [{
+        role: 'user',
+        content: `Identify the PRIMARY algorithmic pattern for this coding problem.
+Problem: "${problem.slice(0, 400)}"
+Return exactly: {"pattern":"ONE_OF[${PATTERNS.join('|')}]"}`,
+      }],
+    })
+
+    const clean = text.replace(/```json\n?|```\n?/g, '').trim()
+    const result = JSON.parse(clean) as { pattern: string }
+    const pattern: Pattern = (PATTERNS as readonly string[]).includes(result.pattern)
+      ? result.pattern as Pattern : 'hashmap'
+
+    await supabase
+      .from('weakness_profile')
+      .upsert(
+        { user_id: userId, session_id: sessionId, pattern, hint_count: 0, breakdown_point: 'pattern_identification' },
+        { onConflict: 'session_id' }
+      )
+  } catch (err) {
+    console.error('[classifyPatternOnly] failed for session', sessionId, err)
+  }
+}
+
 export async function analyzeSession(
   supabase: SupabaseClient,
   userId: string,
@@ -51,13 +89,6 @@ export async function analyzeSession(
   problem: string
 ): Promise<void> {
   try {
-    const { data: existing } = await supabase
-      .from('weakness_profile')
-      .select('id')
-      .eq('session_id', sessionId)
-      .maybeSingle()
-    if (existing) return
-
     // Count AI turns before the first code submission
     let hintCount = 0
     for (const msg of messages) {
