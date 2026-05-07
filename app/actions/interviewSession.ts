@@ -52,6 +52,7 @@ export async function startInterviewSession(
   try {
     const { text: problem } = await generateText({
       model: anthropic('claude-sonnet-4-6'),
+      temperature: 0.5,
       maxOutputTokens: 600,
       system: `You generate LeetCode-style coding problems. Return ONLY the problem text — no commentary, no explanation, no notes.
 

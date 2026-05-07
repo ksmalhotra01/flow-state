@@ -94,6 +94,7 @@ export async function sendMessage(
 
   const { text: aiContent } = await generateText({
     model: resolvedModel,
+    temperature: 0.7,
     maxOutputTokens: 1024,
     system: isInterview ? `You are a fair, professional technical interviewer running a 30-minute coding interview. Your goal is to accurately assess the candidate's abilities — not to fail them.
 

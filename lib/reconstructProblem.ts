@@ -11,6 +11,7 @@ export async function reconstructProblem(
   try {
     const { text } = await generateText({
       model: anthropic('claude-haiku-4-5-20251001'),
+      temperature: 0.3,
       maxOutputTokens: 600,
       system: `You reconstruct coding problems from partial names or descriptions.
 If given a full problem already, return it unchanged.

@@ -46,6 +46,7 @@ export async function generateFeedback(sessionId: string): Promise<Feedback | nu
 
   const { text } = await generateText({
     model: anthropic('claude-haiku-4-5-20251001'),
+    temperature: 0.3,
     maxOutputTokens: 600,
     system: `You are a senior engineering manager scoring a technical interview. Return ONLY valid JSON, no commentary.`,
     messages: [{
