@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { useActionState } from 'react'
+import { useActionState, useState, useEffect } from 'react'
 import { createSession } from '@/app/actions/sessions'
 import Nav from '@/app/components/Nav'
 import SessionSidebar, { type SessionSummary } from '@/app/components/SessionSidebar'
@@ -15,6 +15,16 @@ const confidenceLevels = [
 
 export default function DashboardClient({ sessions }: { sessions: SessionSummary[] }) {
   const [state, action, pending] = useActionState(createSession, undefined)
+  const [problemValue, setProblemValue] = useState('')
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const p = params.get('problem')
+    if (p) {
+      setProblemValue(p)
+      document.getElementById('prep')?.scrollIntoView({ behavior: 'smooth' })
+    }
+  }, [])
 
   return (
     <div className="flex h-screen flex-col bg-slate-950 text-slate-200">
@@ -102,6 +112,8 @@ export default function DashboardClient({ sessions }: { sessions: SessionSummary
                     id="problem"
                     name="problem"
                     rows={5}
+                    value={problemValue}
+                    onChange={e => setProblemValue(e.target.value)}
                     placeholder="Paste a problem, or just type a name — 'Two Sum', 'LeetCode 1', 'easy sliding window'…"
                     className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm leading-relaxed text-slate-200 placeholder-slate-600 transition-colors focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
                   />

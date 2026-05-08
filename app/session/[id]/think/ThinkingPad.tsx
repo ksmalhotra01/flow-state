@@ -316,6 +316,8 @@ export default function ThinkingPad({
     if (mode !== 'interview' || feedback) return
     const last = optimisticMessages.findLast(m => m.role === 'assistant')
     if (last?.content.includes('That wraps up our session.')) {
+      setTimeUp(true)
+      setMessageCountAtEnd(optimisticMessages.length)
       generateFeedback(sessionId).then(fb => { if (fb) { setFeedback(fb); setShowFeedback(true) } })
     }
   }, [optimisticMessages])
@@ -467,12 +469,20 @@ export default function ThinkingPad({
                     <span className="font-medium text-slate-200">{feedback.nextProblem} →</span>
                   </Link>
                 )}
-                <button
-                  onClick={() => setShowFeedback(false)}
-                  className="w-full rounded-xl bg-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-slate-600 transition-colors"
-                >
-                  {timeUp ? 'Review session' : 'Done'}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowFeedback(false)}
+                    className="flex-1 rounded-xl bg-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-slate-600 transition-colors"
+                  >
+                    Review session
+                  </button>
+                  <Link
+                    href="/dashboard"
+                    className="flex-1 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors text-center"
+                  >
+                    Back to Dashboard
+                  </Link>
+                </div>
               </>
             ) : (
               <div className="animate-pulse space-y-5">
