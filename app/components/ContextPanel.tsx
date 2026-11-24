@@ -91,7 +91,7 @@ export default function ContextPanel({ messages, isVisible, onToggle }: Props) {
       <button
         onClick={onToggle}
         title="Show context panel"
-        className="flex w-8 shrink-0 items-start justify-center border-l border-slate-800 bg-slate-900 pt-4 text-lg text-slate-600 hover:text-slate-400 transition-colors"
+        className="flex w-8 shrink-0 items-start justify-center border-l border-stone-800 bg-stone-900 pt-4 text-lg text-stone-600 hover:text-stone-400 transition-colors"
       >
         ‹
       </button>
@@ -101,22 +101,22 @@ export default function ContextPanel({ messages, isVisible, onToggle }: Props) {
   return (
     <div
       style={{ width }}
-      className="relative flex shrink-0 flex-col border-l border-slate-800 bg-slate-900"
+      className="relative flex shrink-0 flex-col border-l border-stone-800 bg-stone-900"
     >
       {/* Resize handle — left edge */}
       <div
         onMouseDown={startResize}
-        className="absolute left-0 top-0 z-10 h-full w-1 cursor-col-resize bg-transparent hover:bg-indigo-500/40 transition-colors"
+        className="absolute left-0 top-0 z-10 h-full w-1 cursor-col-resize bg-transparent hover:bg-orange-500/40 transition-colors"
       />
 
-      <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3">
-        <span className="text-sm font-bold tracking-wide text-slate-100">
+      <div className="flex items-center justify-between border-b border-stone-800 px-4 py-3">
+        <span className="text-sm font-bold tracking-wide text-stone-100">
           Context
         </span>
         <button
           onClick={onToggle}
           title="Hide context panel"
-          className="text-slate-600 hover:text-slate-400 transition-colors"
+          className="text-stone-600 hover:text-stone-400 transition-colors"
         >
           ›
         </button>
@@ -125,21 +125,21 @@ export default function ContextPanel({ messages, isVisible, onToggle }: Props) {
       <div className="flex-1 overflow-y-auto space-y-5 px-3 py-4">
 
         {isEmpty && (
-          <p className="mt-8 text-center text-xs leading-relaxed text-slate-600">
+          <p className="mt-8 text-center text-xs leading-relaxed text-stone-600">
             Context will appear here as the conversation progresses.
           </p>
         )}
 
         {complexities.length > 0 && (
           <div className="space-y-2">
-            <p className="px-1 text-xs font-bold uppercase tracking-widest text-slate-200">
+            <p className="px-1 text-xs font-medium text-stone-400">
               Complexity
             </p>
             <div className="flex flex-wrap gap-2 px-1">
               {complexities.map((c, i) => (
                 <span
                   key={i}
-                  className="rounded-md border border-slate-700 bg-slate-800 px-2.5 py-1 font-mono text-xs text-indigo-300"
+                  className="rounded-md border border-stone-700 bg-stone-800 px-2.5 py-1 font-mono text-xs text-orange-300"
                 >
                   {c}
                 </span>
@@ -150,11 +150,11 @@ export default function ContextPanel({ messages, isVisible, onToggle }: Props) {
 
         {codeBlocks.length > 0 && (
           <div className="space-y-3">
-            <p className="px-1 text-xs font-bold uppercase tracking-widest text-slate-200">
+            <p className="px-1 text-xs font-medium text-stone-400">
               Code
             </p>
             {codeBlocks.map((block, i) => (
-              <div key={i} className="overflow-hidden rounded-lg border border-slate-800">
+              <div key={i} className="overflow-hidden rounded-lg border border-stone-800">
                 <SyntaxHighlighter
                   style={oneDark}
                   language={block.language}

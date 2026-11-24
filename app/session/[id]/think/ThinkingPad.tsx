@@ -61,7 +61,7 @@ function MessageContent({ content }: { content: string }) {
           }
 
           return (
-            <code className="rounded bg-slate-950 px-1.5 py-0.5 font-mono text-xs text-indigo-300">
+            <code className="rounded bg-stone-950 px-1.5 py-0.5 font-mono text-xs text-orange-300">
               {children}
             </code>
           )
@@ -76,7 +76,7 @@ function MessageContent({ content }: { content: string }) {
           return <ol className="mb-3 list-inside list-decimal space-y-1">{children}</ol>
         },
         strong({ children }) {
-          return <strong className="font-semibold text-slate-100">{children}</strong>
+          return <strong className="font-semibold text-stone-100">{children}</strong>
         },
       }}
     >
@@ -107,7 +107,7 @@ function FillQuestion({
 
   return (
     <div className="space-y-4">
-      <p className="text-sm leading-loose text-slate-300">
+      <p className="text-sm leading-loose text-stone-300">
         {parts.map((part, i) => (
           <span key={i}>
             {part}
@@ -121,7 +121,7 @@ function FillQuestion({
                 }}
                 disabled={disabled}
                 placeholder="..."
-                className="inline-block mx-1.5 w-28 rounded border border-indigo-500 bg-slate-800 px-2 py-0.5 text-sm text-slate-100 placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-indigo-400 disabled:opacity-50"
+                className="inline-block mx-1.5 w-28 rounded border border-orange-500 bg-stone-800 px-2 py-0.5 text-sm text-stone-100 placeholder-stone-600 focus:outline-none focus:ring-1 focus:ring-orange-400 disabled:opacity-50"
               />
             )}
           </span>
@@ -130,7 +130,7 @@ function FillQuestion({
       <button
         onClick={handleSubmit}
         disabled={disabled || answers.some(a => !a.trim())}
-        className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+        className="rounded-lg bg-orange-600 px-4 py-2 text-xs font-semibold text-white hover:bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         Submit
       </button>
@@ -150,16 +150,16 @@ function InteractiveQuestion({
   if (question.type === 'mcq') {
     return (
       <div className="space-y-3">
-        <p className="text-sm leading-relaxed text-slate-300">{question.question}</p>
+        <p className="text-sm leading-relaxed text-stone-300">{question.question}</p>
         <div className="space-y-2">
           {question.options.map((option, i) => (
             <button
               key={i}
               onClick={() => onSubmit(option)}
               disabled={disabled}
-              className="w-full text-left rounded-lg border border-slate-700 px-4 py-2.5 text-sm text-slate-300 hover:border-indigo-500 hover:bg-indigo-950 hover:text-slate-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full text-left rounded-lg border border-stone-700 px-4 py-2.5 text-sm text-stone-300 hover:border-orange-500 hover:bg-orange-950 hover:text-stone-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span className="font-mono text-indigo-400 mr-2">{String.fromCharCode(65 + i)})</span>
+              <span className="font-mono text-orange-400 mr-2">{String.fromCharCode(65 + i)})</span>
               {fixExponents(option)}
             </button>
           ))}
@@ -171,19 +171,19 @@ function InteractiveQuestion({
   if (question.type === 'tf') {
     return (
       <div className="space-y-3">
-        <p className="text-sm leading-relaxed text-slate-300">{fixExponents(question.statement)}</p>
+        <p className="text-sm leading-relaxed text-stone-300">{fixExponents(question.statement)}</p>
         <div className="flex gap-3">
           <button
             onClick={() => onSubmit('True')}
             disabled={disabled}
-            className="flex-1 rounded-lg border border-slate-700 px-4 py-2.5 text-sm font-medium text-slate-300 hover:border-green-500 hover:bg-green-950 hover:text-green-300 transition-colors disabled:opacity-50"
+            className="flex-1 rounded-lg border border-stone-700 px-4 py-2.5 text-sm font-medium text-stone-300 hover:border-green-500 hover:bg-green-950 hover:text-green-300 transition-colors disabled:opacity-50"
           >
             True
           </button>
           <button
             onClick={() => onSubmit('False')}
             disabled={disabled}
-            className="flex-1 rounded-lg border border-slate-700 px-4 py-2.5 text-sm font-medium text-slate-300 hover:border-red-500 hover:bg-red-950 hover:text-red-300 transition-colors disabled:opacity-50"
+            className="flex-1 rounded-lg border border-stone-700 px-4 py-2.5 text-sm font-medium text-stone-300 hover:border-red-500 hover:bg-red-950 hover:text-red-300 transition-colors disabled:opacity-50"
           >
             False
           </button>
@@ -407,16 +407,16 @@ export default function ThinkingPad({
   }
 
   return (
-    <div className="flex h-screen flex-col bg-slate-950 text-slate-200">
+    <div className="flex h-screen flex-col bg-stone-950 text-stone-200">
 
       {/* Feedback overlay — shown after timer or give-up; shows skeleton while AI generates */}
       {showFeedback && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/95 backdrop-blur p-4">
-          <div className="w-full max-w-md rounded-2xl border border-slate-700 bg-slate-900 p-6 space-y-5">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-stone-950/95 backdrop-blur p-4">
+          <div className="w-full max-w-md rounded-2xl border border-stone-700 bg-stone-900 p-6 space-y-5">
             {feedback ? (
               <>
                 <div className="flex items-center justify-between">
-                  <p className="text-lg font-semibold text-slate-100">Interview Scorecard</p>
+                  <p className="text-lg font-semibold text-stone-100">Interview Scorecard</p>
                   <span className={`rounded-full px-3 py-1 text-xs font-bold ${
                     feedback.verdict === 'Ready' ? 'bg-green-900 text-green-300'
                     : feedback.verdict === 'Getting Close' ? 'bg-yellow-900 text-yellow-300'
@@ -431,29 +431,29 @@ export default function ThinkingPad({
                     { label: 'Problem Solving', value: feedback.problemSolving },
                     { label: 'Code Quality', value: feedback.codeQuality },
                   ] as const).map(({ label, value }) => (
-                    <div key={label} className="rounded-xl border border-slate-700 bg-slate-800 p-3 text-center">
-                      <p className="text-2xl font-bold text-slate-100">{value}<span className="text-sm text-slate-500">/5</span></p>
-                      <p className="mt-1 text-xs text-slate-400">{label}</p>
+                    <div key={label} className="rounded-xl border border-stone-700 bg-stone-800 p-3 text-center">
+                      <p className="text-2xl font-bold text-stone-100">{value}<span className="text-sm text-stone-500">/5</span></p>
+                      <p className="mt-1 text-xs text-stone-400">{label}</p>
                     </div>
                   ))}
                 </div>
                 {feedback.observations?.length > 0 && (
                   <ul className="space-y-2">
                     {feedback.observations.map((obs, i) => (
-                      <li key={i} className="flex gap-2 text-sm text-slate-300">
-                        <span className="text-slate-500 shrink-0">•</span>
+                      <li key={i} className="flex gap-2 text-sm text-stone-300">
+                        <span className="text-stone-500 shrink-0">•</span>
                         {obs}
                       </li>
                     ))}
                   </ul>
                 )}
                 {feedback.improvements?.length > 0 && (
-                  <div className="rounded-xl border border-slate-700 bg-slate-800/50 p-4 space-y-2">
-                    <p className="text-xs font-bold uppercase tracking-widest text-slate-500">Work on before next session</p>
+                  <div className="rounded-xl border border-stone-700 bg-stone-800/50 p-4 space-y-2">
+                    <p className="text-xs font-medium text-stone-500">Work on before next session</p>
                     <ul className="space-y-2">
                       {feedback.improvements.map((item, i) => (
-                        <li key={i} className="flex gap-2 text-sm text-slate-300">
-                          <span className="text-indigo-500 shrink-0">→</span>
+                        <li key={i} className="flex gap-2 text-sm text-stone-300">
+                          <span className="text-orange-500 shrink-0">→</span>
                           {item}
                         </li>
                       ))}
@@ -463,22 +463,22 @@ export default function ThinkingPad({
                 {feedback.nextProblem && (
                   <Link
                     href={`/dashboard?problem=${encodeURIComponent(feedback.nextProblem)}`}
-                    className="flex items-center justify-between rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 text-sm hover:border-indigo-500 hover:bg-indigo-950/30 transition-colors"
+                    className="flex items-center justify-between rounded-xl border border-stone-700 bg-stone-800 px-4 py-3 text-sm hover:border-orange-500 hover:bg-orange-950/30 transition-colors"
                   >
-                    <span className="text-slate-400">Try next</span>
-                    <span className="font-medium text-slate-200">{feedback.nextProblem} →</span>
+                    <span className="text-stone-400">Try next</span>
+                    <span className="font-medium text-stone-200">{feedback.nextProblem} →</span>
                   </Link>
                 )}
                 <div className="flex gap-2">
                   <button
                     onClick={() => setShowFeedback(false)}
-                    className="flex-1 rounded-xl bg-slate-700 px-4 py-2.5 text-sm font-semibold text-slate-200 hover:bg-slate-600 transition-colors"
+                    className="flex-1 rounded-xl bg-stone-700 px-4 py-2.5 text-sm font-semibold text-stone-200 hover:bg-stone-600 transition-colors"
                   >
                     Review session
                   </button>
                   <Link
                     href="/dashboard"
-                    className="flex-1 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-indigo-500 transition-colors text-center"
+                    className="flex-1 rounded-xl bg-orange-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-orange-500 transition-colors text-center"
                   >
                     Back to Dashboard
                   </Link>
@@ -487,25 +487,25 @@ export default function ThinkingPad({
             ) : (
               <div className="animate-pulse space-y-5">
                 <div className="flex items-center justify-between">
-                  <div className="h-6 w-40 rounded bg-slate-800" />
-                  <div className="h-6 w-24 rounded-full bg-slate-800" />
+                  <div className="h-6 w-40 rounded bg-stone-800" />
+                  <div className="h-6 w-24 rounded-full bg-stone-800" />
                 </div>
                 <div className="grid grid-cols-3 gap-3">
                   {[...Array(3)].map((_, i) => (
-                    <div key={i} className="h-20 rounded-xl bg-slate-800" />
+                    <div key={i} className="h-20 rounded-xl bg-stone-800" />
                   ))}
                 </div>
                 <div className="space-y-2">
                   {[...Array(3)].map((_, i) => (
-                    <div key={i} className="h-4 rounded bg-slate-800" style={{ width: `${75 + i * 8}%` }} />
+                    <div key={i} className="h-4 rounded bg-stone-800" style={{ width: `${75 + i * 8}%` }} />
                   ))}
                 </div>
-                <div className="rounded-xl bg-slate-800/60 p-4 space-y-2">
+                <div className="rounded-xl bg-stone-800/60 p-4 space-y-2">
                   {[...Array(2)].map((_, i) => (
-                    <div key={i} className="h-4 rounded bg-slate-800" style={{ width: `${80 + i * 10}%` }} />
+                    <div key={i} className="h-4 rounded bg-stone-800" style={{ width: `${80 + i * 10}%` }} />
                   ))}
                 </div>
-                <p className="text-center text-sm text-slate-500">Analysing your session…</p>
+                <p className="text-center text-sm text-stone-500">Analysing your session…</p>
               </div>
             )}
           </div>
@@ -531,11 +531,11 @@ export default function ThinkingPad({
         <div className="flex flex-1 flex-col overflow-hidden">
 
           {/* Problem pinned at top */}
-          <div className="shrink-0 border-b border-slate-800 bg-slate-900 py-4">
+          <div className="shrink-0 border-b border-stone-800 bg-stone-900 py-4">
             <div className="mx-auto max-w-3xl px-4">
               {mode === 'interview' ? (
                 <div className="flex items-center gap-3">
-                  <span className="rounded bg-red-950 px-2 py-0.5 text-xs font-bold uppercase tracking-widest text-red-400">
+                  <span className="text-xs font-medium text-red-400">
                     Interview
                   </span>
                   {initialMessages.length === 0 && !sessionEnded && (
@@ -548,7 +548,7 @@ export default function ThinkingPad({
                   {!isAbandoned && optimisticMessages.length > 0 && (
                     giveUpConfirm ? (
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-slate-400">Abandon this session?</span>
+                        <span className="text-xs text-stone-400">Abandon this session?</span>
                         <button
                           onClick={handleGiveUp}
                           className="rounded px-2 py-0.5 text-xs font-semibold bg-red-700 text-white hover:bg-red-600 transition-colors"
@@ -557,7 +557,7 @@ export default function ThinkingPad({
                         </button>
                         <button
                           onClick={() => setGiveUpConfirm(false)}
-                          className="rounded px-2 py-0.5 text-xs font-semibold text-slate-400 hover:text-slate-200 transition-colors"
+                          className="rounded px-2 py-0.5 text-xs font-semibold text-stone-400 hover:text-stone-200 transition-colors"
                         >
                           Cancel
                         </button>
@@ -574,7 +574,7 @@ export default function ThinkingPad({
                   {feedback && !showFeedback && (
                     <button
                       onClick={() => setShowFeedback(true)}
-                      className="rounded px-2 py-0.5 text-xs font-semibold border border-slate-600 text-slate-300 hover:border-slate-400 hover:text-slate-100 transition-colors"
+                      className="rounded px-2 py-0.5 text-xs font-semibold border border-stone-600 text-stone-300 hover:border-stone-400 hover:text-stone-100 transition-colors"
                     >
                       View Scorecard
                     </button>
@@ -583,15 +583,15 @@ export default function ThinkingPad({
               ) : (
                 <>
                   <div className="mb-2">
-                    <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Problem</p>
+                    <p className="text-xs font-medium text-stone-400">Problem</p>
                   </div>
-                  <div className="border-l-2 border-indigo-500 pl-3">
-                    <p className={`font-mono text-sm leading-relaxed text-slate-100 ${problemExpanded ? 'max-h-48 overflow-y-auto' : 'line-clamp-3'}`}>
+                  <div className="border-l-2 border-orange-500 pl-3">
+                    <p className={`font-mono text-sm leading-relaxed text-stone-100 ${problemExpanded ? 'max-h-48 overflow-y-auto' : 'line-clamp-3'}`}>
                       {problem}
                     </p>
                     <button
                       onClick={() => setProblemExpanded(v => !v)}
-                      className="mt-1 text-xs text-indigo-400 hover:text-indigo-300 transition-colors"
+                      className="mt-1 text-xs text-orange-400 hover:text-orange-300 transition-colors"
                     >
                       {problemExpanded ? 'Show less ↑' : 'Show full problem ↓'}
                     </button>
@@ -606,7 +606,7 @@ export default function ThinkingPad({
             <div className="mx-auto max-w-3xl space-y-4 px-4">
 
               {visibleMessages.length === 0 && (
-                <p className="mt-16 text-center text-sm text-slate-500">
+                <p className="mt-16 text-center text-sm text-stone-500">
                   Explain your initial approach to the problem.
                 </p>
               )}
@@ -623,12 +623,12 @@ export default function ThinkingPad({
                       transition={{ duration: 0.2, ease: 'easeOut' }}
                       className={`rounded-xl border p-5 text-sm ${
                         message.role === 'assistant'
-                          ? 'border-slate-700 bg-slate-900 text-slate-200'
-                          : 'border-indigo-800 bg-slate-800 text-white'
+                          ? 'border-stone-700 bg-stone-900 text-stone-200 border-l-2 border-l-orange-600/60'
+                          : 'border-stone-700 bg-stone-800 text-white'
                       }`}
                     >
-                      <p className={`mb-3 text-xs font-semibold uppercase tracking-widest ${
-                        message.role === 'assistant' ? 'text-indigo-300' : 'text-slate-400'
+                      <p className={`mb-3 text-xs font-medium ${
+                        message.role === 'assistant' ? 'text-orange-400' : 'text-stone-500'
                       }`}>
                         {message.role === 'assistant' ? 'Interviewer' : 'You'}
                       </p>
@@ -651,14 +651,14 @@ export default function ThinkingPad({
               </AnimatePresence>
 
               {pending && !isSessionOver && (
-                <div className="rounded-xl border border-slate-800 bg-slate-900 p-5">
-                  <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-indigo-400">
+                <div className="rounded-xl border border-stone-700 bg-stone-900 p-5 border-l-2 border-l-orange-600/60">
+                  <p className="mb-3 text-xs font-medium text-orange-400">
                     Interviewer
                   </p>
                   <div className="flex items-center gap-1.5">
-                    <span className="h-1.5 w-1.5 rounded-full bg-slate-500 animate-bounce [animation-delay:0ms]" />
-                    <span className="h-1.5 w-1.5 rounded-full bg-slate-500 animate-bounce [animation-delay:150ms]" />
-                    <span className="h-1.5 w-1.5 rounded-full bg-slate-500 animate-bounce [animation-delay:300ms]" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-stone-500 animate-pulse [animation-delay:0ms]" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-stone-500 animate-pulse [animation-delay:200ms]" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-stone-500 animate-pulse [animation-delay:400ms]" />
                   </div>
                 </div>
               )}
@@ -670,37 +670,37 @@ export default function ThinkingPad({
           {/* Input panel — resizable from the top edge */}
           <div
             style={{ height: isSessionOver ? 'auto' : inputHeight }}
-            className="shrink-0 flex flex-col bg-slate-950"
+            className="shrink-0 flex flex-col bg-stone-950"
           >
 
             {!isSessionOver && (
               <div
                 onMouseDown={startInputResize}
-                className="group flex h-3 shrink-0 cursor-row-resize items-center justify-center border-t border-slate-800 hover:border-indigo-500/50 transition-colors"
+                className="group flex h-3 shrink-0 cursor-row-resize items-center justify-center border-t border-stone-800 hover:border-orange-500/50 transition-colors"
               >
-                <div className="h-0.5 w-12 rounded-full bg-slate-700 group-hover:bg-indigo-500/70 transition-colors" />
+                <div className="h-0.5 w-12 rounded-full bg-stone-700 group-hover:bg-orange-500/70 transition-colors" />
               </div>
             )}
 
             {isSessionOver ? (
-              <div className="border-t border-slate-800 px-4 py-4 text-center space-y-2">
+              <div className="border-t border-stone-800 px-4 py-4 text-center space-y-2">
                 {isAbandoned ? (
                   <p className="text-sm text-red-400">This session was abandoned. No further input is allowed.</p>
                 ) : (
                   <p className="text-sm text-yellow-400">This session is complete. Reason: Timed out.</p>
                 )}
-                <p className="text-xs text-slate-600">Start a new session from the dashboard.</p>
+                <p className="text-xs text-stone-600">Start a new session from the dashboard.</p>
               </div>
             ) : (
               <>
                 {/* Tabs */}
-                <div className="flex shrink-0 border-b border-slate-800">
+                <div className="flex shrink-0 border-b border-stone-800">
                   <button
                     onClick={() => setCodeMode(false)}
                     className={`px-5 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px ${
                       !codeMode
-                        ? 'border-indigo-500 text-white'
-                        : 'border-transparent text-slate-500 hover:text-slate-300'
+                        ? 'border-orange-500 text-white'
+                        : 'border-transparent text-stone-500 hover:text-stone-300'
                     }`}
                   >
                     Chat
@@ -709,8 +709,8 @@ export default function ThinkingPad({
                     onClick={() => setCodeMode(true)}
                     className={`px-5 py-2.5 text-sm font-semibold transition-colors border-b-2 -mb-px ${
                       codeMode
-                        ? 'border-indigo-500 text-white'
-                        : 'border-transparent text-slate-500 hover:text-slate-300'
+                        ? 'border-orange-500 text-white'
+                        : 'border-transparent text-stone-500 hover:text-stone-300'
                     }`}
                   >
                     Code
@@ -737,12 +737,12 @@ export default function ThinkingPad({
                           placeholder="Explain your thinking… (Enter to send · Shift+Enter for new line)"
                           disabled={pending}
                           onKeyDown={handleKeyDown}
-                          className="flex-1 min-h-0 w-full resize-none rounded-xl border border-slate-700 bg-slate-800 px-4 py-3 pr-24 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                          className="flex-1 min-h-0 w-full resize-none rounded-xl border border-stone-700 bg-stone-800 px-4 py-3 pr-24 text-sm text-stone-200 placeholder-stone-500 focus:outline-none focus:ring-2 focus:ring-orange-500 disabled:opacity-50"
                         />
                         <button
                           type="submit"
                           disabled={pending}
-                          className="absolute bottom-3 right-3 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-indigo-500 disabled:opacity-50"
+                          className="absolute bottom-3 right-3 rounded-lg bg-orange-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-orange-500 disabled:opacity-50"
                         >
                           Send
                         </button>
@@ -759,16 +759,16 @@ export default function ThinkingPad({
 
         {/* Right column: problem panel (interview) or context panel (prep) */}
         {mode === 'interview' ? (
-          <div style={{ width: problemPanelWidth }} className="relative flex shrink-0 flex-col border-l border-slate-800 bg-slate-900">
+          <div style={{ width: problemPanelWidth }} className="relative flex shrink-0 flex-col border-l border-stone-800 bg-stone-900">
             <div
               onMouseDown={startProblemResize}
-              className="absolute left-0 top-0 z-10 h-full w-1 cursor-col-resize bg-transparent hover:bg-indigo-500/40 transition-colors"
+              className="absolute left-0 top-0 z-10 h-full w-1 cursor-col-resize bg-transparent hover:bg-orange-500/40 transition-colors"
             />
-            <div className="border-b border-slate-800 px-4 py-3">
-              <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Problem</span>
+            <div className="border-b border-stone-800 px-4 py-3">
+              <span className="text-xs font-medium text-stone-500">Problem</span>
             </div>
             <div className="flex-1 overflow-y-auto px-4 py-4">
-              <p className="font-mono text-sm leading-relaxed text-slate-200 whitespace-pre-wrap">{problem}</p>
+              <p className="font-mono text-sm leading-relaxed text-stone-200 whitespace-pre-wrap">{problem}</p>
             </div>
           </div>
         ) : (

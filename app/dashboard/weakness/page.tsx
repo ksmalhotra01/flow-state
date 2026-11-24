@@ -105,7 +105,7 @@ export default async function WeaknessPage() {
   const stats = rows && rows.length > 0 ? computeStats(rows as WeaknessRow[], outcomeMap) : []
 
   return (
-    <div className="flex h-screen flex-col bg-slate-950 text-slate-200">
+    <div className="flex h-screen flex-col bg-stone-950 text-stone-200">
       <Nav />
       <div className="flex-1 overflow-y-auto">
         <WeaknessWrapper stats={stats} />

@@ -1,12 +1,12 @@
 import Nav from '@/app/components/Nav'
 
 function Skeleton({ className }: { className?: string }) {
-  return <div className={`animate-pulse rounded bg-slate-800 ${className ?? ''}`} />
+  return <div className={`animate-pulse rounded bg-stone-800 ${className ?? ''}`} />
 }
 
 export default function InterviewLoading() {
   return (
-    <div className="flex h-screen flex-col bg-slate-950 text-slate-200">
+    <div className="flex h-screen flex-col bg-stone-950 text-stone-200">
       <Nav />
       <div className="flex-1 overflow-y-auto">
         <div className="mx-auto max-w-xl px-4 py-16 space-y-8">

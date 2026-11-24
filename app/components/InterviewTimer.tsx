@@ -39,11 +39,11 @@ export default function InterviewTimer({
       ? 'text-red-400'
       : remaining <= 300
       ? 'text-yellow-400'
-      : 'text-slate-200'
+      : 'text-stone-200'
 
   return (
     <div className="flex items-center gap-2">
-      <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Time</span>
+      <span className="text-xs font-medium text-stone-500">Time</span>
       <span className={`font-mono text-base font-bold tabular-nums ${colorClass}`}>
         {display}
       </span>

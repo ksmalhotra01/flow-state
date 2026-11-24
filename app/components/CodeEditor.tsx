@@ -57,8 +57,8 @@ export default function CodeEditor({
             onClick={() => setLanguage(lang)}
             className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${
               language === lang
-                ? 'bg-indigo-600 text-white'
-                : 'text-slate-500 hover:text-slate-300'
+                ? 'bg-orange-600 text-white'
+                : 'text-stone-500 hover:text-stone-300'
             }`}
           >
             {lang}
@@ -66,7 +66,7 @@ export default function CodeEditor({
         ))}
       </div>
 
-      <div className="flex-1 min-h-0 overflow-hidden rounded-xl border border-slate-700">
+      <div className="flex-1 min-h-0 overflow-hidden rounded-xl border border-stone-700">
         <CodeMirror
           value={code}
           onChange={setCode}
@@ -86,11 +86,11 @@ export default function CodeEditor({
       </div>
 
       <div className="flex shrink-0 items-center justify-between">
-        <p className="text-xs text-slate-500">Tab indents · Shift+Enter for new line</p>
+        <p className="text-xs text-stone-500">Tab indents · Shift+Enter for new line</p>
         <button
           onClick={handleSubmit}
           disabled={disabled || !code.trim()}
-          className="rounded-lg bg-indigo-600 px-4 py-2 text-xs font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="rounded-lg bg-orange-600 px-4 py-2 text-xs font-semibold text-white hover:bg-orange-500 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Submit Code
         </button>
